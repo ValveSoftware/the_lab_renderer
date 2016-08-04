@@ -350,7 +350,7 @@ Shader "Valve/vr_standard"
 					//-----------------------------------------------------------//
 					// Negate the world normal if we are rendering the back face //
 					//-----------------------------------------------------------//
-					#if ( S_RENDER_BACKFACES )
+					#if ( S_RENDER_BACKFACES && !S_UNLIT )
 					{
 						i.vNormalWs.xyz *= ( bIsFrontFace ? 1.0 : -1.0 );
 					}
