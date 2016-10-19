@@ -450,6 +450,8 @@ public class ValveCamera : MonoBehaviour
 		//	ValveShadowBufferRender();
 		//}
 
+		UpdateAdaptiveQuality();
+
 		// Adaptive quality debug quad
 		if ( Application.isPlaying )
 		{
@@ -522,7 +524,6 @@ public class ValveCamera : MonoBehaviour
 	//---------------------------------------------------------------------------------------------------------------------------------------------------
 	void OnPreCull()
 	{
-		UpdateAdaptiveQuality();
 		//if ( !m_renderShadowsInLateUpdate )
 		{
 			ValveShadowBufferRender();
