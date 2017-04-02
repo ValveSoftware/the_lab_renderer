@@ -45,7 +45,7 @@ internal class ValveShaderGUI : ShaderGUI
 		public static GUIContent metallicMapText = new GUIContent( "Metallic", "Metallic (R) and Gloss (A)" );
 		public static GUIContent smoothnessText = new GUIContent("Gloss", "");
 		public static GUIContent normalMapText = new GUIContent("Normal", "Normal Map");
-		//public static GUIContent heightMapText = new GUIContent("Height Map", "Height Map (G)");
+		public static GUIContent heightMapText = new GUIContent("Height Map", "Height Map (G)");
 		public static GUIContent cubeMapScalarText = new GUIContent( "Cube Map Scalar", "" );
 		public static GUIContent occlusionText = new GUIContent("Occlusion", "Occlusion (G)");
 		public static GUIContent occlusionStrengthDirectDiffuseText = new GUIContent( "Occlusion Direct Diffuse", "" );
@@ -97,8 +97,8 @@ internal class ValveShaderGUI : ShaderGUI
 	MaterialProperty occlusionStrengthDirectSpecular = null;
 	MaterialProperty occlusionStrengthIndirectDiffuse = null;
 	MaterialProperty occlusionStrengthIndirectSpecular = null;
-	//MaterialProperty heigtMapScale = null;
-	//MaterialProperty heightMap = null;
+	MaterialProperty heigtMapScale = null;
+	MaterialProperty heightMap = null;
 	MaterialProperty emissionColorForRendering = null;
 	MaterialProperty emissionMap = null;
 	MaterialProperty detailMask = null;
@@ -136,8 +136,8 @@ internal class ValveShaderGUI : ShaderGUI
 		smoothness = FindProperty ("_Glossiness", props);
 		bumpScale = FindProperty ("_BumpScale", props);
 		bumpMap = FindProperty ("_BumpMap", props);
-		//heigtMapScale = FindProperty ("_Parallax", props);
-		//heightMap = FindProperty("_ParallaxMap", props);
+		heigtMapScale = FindProperty ("_Parallax", props);
+		heightMap = FindProperty("_ParallaxMap", props);
 		cubeMapScalar = FindProperty( "g_flCubeMapScalar", props );
 		occlusionStrength = FindProperty ("_OcclusionStrength", props);
 		occlusionStrengthDirectDiffuse = FindProperty( "_OcclusionStrengthDirectDiffuse", props );
@@ -228,7 +228,7 @@ internal class ValveShaderGUI : ShaderGUI
 				}
 				m_MaterialEditor.ShaderProperty( cubeMapScalar, Styles.cubeMapScalarText.text, 0 );
 			}
-			//m_MaterialEditor.TexturePropertySingleLine(Styles.heightMapText, heightMap, heightMap.textureValue != null ? heigtMapScale : null);
+			m_MaterialEditor.TexturePropertySingleLine(Styles.heightMapText, heightMap, heightMap.textureValue != null ? heigtMapScale : null);
 			DoEmissionArea( material );
 			m_MaterialEditor.TexturePropertySingleLine( Styles.detailMaskText, detailMask );
 			if ( !bUnlit )
