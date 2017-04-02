@@ -25,7 +25,8 @@ Shader "Valve/vr_standard"
 
 		_BumpScale( "Scale", Float ) = 1.0
 		[Normal] _BumpMap( "Normal Map", 2D ) = "bump" {}
-
+		
+		// Note: Parallax Occlusion does not work w/ world aligned textures at the moment.
 		_Parallax ( "Height Scale", Range ( 0.005, 0.08 ) ) = 0.02
 		_ParallaxMap ( "Height Map", 2D ) = "black" {}
 
@@ -102,7 +103,7 @@ Shader "Valve/vr_standard"
 				#pragma shader_feature _SPECGLOSSMAP
 				#pragma shader_feature _EMISSION
 				#pragma shader_feature _DETAIL_MULX2
-				//#pragma shader_feature _PARALLAXMAP
+				#pragma shader_feature _PARALLAXMAP
 
 				#pragma shader_feature S_SPECULAR_NONE S_SPECULAR_BLINNPHONG S_SPECULAR_METALLIC
 				#pragma shader_feature S_UNLIT
@@ -157,9 +158,8 @@ Shader "Valve/vr_standard"
 					float4 vPositionOs : POSITION;
 					float3 vNormalOs : NORMAL;
 					float2 vTexCoord0 : TEXCOORD0;
-					#if ( _DETAIL || S_OVERRIDE_LIGHTMAP || LIGHTMAP_ON )
-						float2 vTexCoord1 : TEXCOORD1;
-					#endif
+					float2 vTexCoord1 : TEXCOORD1;
+					
 					#if ( DYNAMICLIGHTMAP_ON || UNITY_PASS_META )
 						float2 vTexCoord2 : TEXCOORD2;
 					#endif
@@ -182,11 +182,7 @@ Shader "Valve/vr_standard"
 						float3 vNormalWs : TEXCOORD1;
 					#endif
 
-					#if ( _DETAIL )
-						float4 vTextureCoords : TEXCOORD2;
-					#else
-						float2 vTextureCoords : TEXCOORD2;
-					#endif
+					float4 vTextureCoords : TEXCOORD2;
 
 					#if ( S_OVERRIDE_LIGHTMAP || LIGHTMAP_ON || DYNAMICLIGHTMAP_ON )
 						#if ( DYNAMICLIGHTMAP_ON )
@@ -199,6 +195,10 @@ Shader "Valve/vr_standard"
 					#if ( _NORMALMAP )
 						float3 vTangentUWs : TEXCOORD4;
 						float3 vTangentVWs : TEXCOORD5;
+					#endif
+
+					#if defined(_PARALLAXMAP)
+						half3 viewDirForParallax : TEXCOORD8;
 					#endif
 
 					#if ( D_VALVE_FOG )
@@ -267,24 +267,24 @@ Shader "Valve/vr_standard"
 						float3 vTexturePositionScaledWs = ( vPositionWs.xyz - g_vWorldAlignedTexturePosition.xyz ) / g_vWorldAlignedTextureSize.xyz;
 						o.vTextureCoords.x = dot( vTexturePositionScaledWs.xyz, g_vWorldAlignedNormalTangentU.xyz );
 						o.vTextureCoords.y = dot( vTexturePositionScaledWs.xyz, g_vWorldAlignedNormalTangentV.xyz );
-						#if ( _DETAIL )
-						{
-							o.vTextureCoords.zw = TRANSFORM_TEX( o.vTextureCoords.xy, _DetailAlbedoMap );
-						}
-						#endif
+						o.vTextureCoords.zw = TRANSFORM_TEX( o.vTextureCoords.xy, _DetailAlbedoMap );
 					}
 					#else
 					{
 						// Texture coords (Copied from Unity's TexCoords() helper function)
 						o.vTextureCoords.xy = TRANSFORM_TEX( i.vTexCoord0, _MainTex );
-						#if ( _DETAIL )
-						{
-							o.vTextureCoords.zw = TRANSFORM_TEX( ( ( _UVSec == 0 ) ? i.vTexCoord0 : i.vTexCoord1 ), _DetailAlbedoMap );
-						}
-						#endif
+						o.vTextureCoords.zw = TRANSFORM_TEX( ( ( _UVSec == 0 ) ? i.vTexCoord0 : i.vTexCoord1 ), _DetailAlbedoMap );
 					}
 					#endif
 
+					#ifdef _PARALLAXMAP 
+					{
+						float3 binormal = cross(i.vNormalOs, i.vTangentUOs_flTangentVSign.xyz) * i.vTangentUOs_flTangentVSign.w;
+						float3x3 rotation = float3x3(i.vTangentUOs_flTangentVSign.xyz, binormal, i.vNormalOs);
+						o.viewDirForParallax = mul(rotation, ObjSpaceViewDir(i.vPositionOs));
+					}
+					#endif
+					
 					// Indirect lighting uv's or light probe
 					#if ( S_OVERRIDE_LIGHTMAP )
 					{
@@ -354,6 +354,12 @@ Shader "Valve/vr_standard"
 					{
 						i.vNormalWs.xyz *= ( bIsFrontFace ? 1.0 : -1.0 );
 					}
+					#endif
+
+					// Parallax
+					#ifdef _PARALLAXMAP
+						half3 viewDirForParallax = NormalizePerPixelNormal(i.viewDirForParallax);
+						i.vTextureCoords = Parallax(i.vTextureCoords, viewDirForParallax);
 					#endif
 
 					//--------//
