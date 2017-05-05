@@ -3,6 +3,7 @@
 #ifndef VALVE_VR_LIGHTING_INCLUDED
 #define VALVE_VR_LIGHTING_INCLUDED
 
+
 #include "UnityCG.cginc"
 #include "UnityStandardBRDF.cginc"
 
@@ -36,7 +37,9 @@ CBUFFER_END
 sampler2D g_tOverrideLightmap;
 uniform float3 g_vOverrideLightmapScale;
 
-float g_flCubeMapScalar = 1.0;
+float g_flCubeMapScalar  = 1.0;
+float g_flFresnelFalloff = 1.0;
+
 
 float g_flReflectanceMin = 0.0;
 float g_flReflectanceMax = 1.0;
@@ -44,7 +47,7 @@ float g_flReflectanceMax = 1.0;
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 struct LightingTerms_t
 {
-	float3 vDiffuse;
+	float4 vDiffuse;
 	float3 vSpecular;
 	float3 vIndirectDiffuse;
 	float3 vIndirectSpecular;
@@ -72,6 +75,12 @@ float2 AdjustRoughnessByGeometricNormal( float2 vRoughness, float3 vGeometricNor
 //---------------------------------------------------------------------------------------------------------------------------------------------------------
 void RoughnessEllipseToScaleAndExp( float2 vRoughness, out float2 o_vDiffuseExponentOut, out float2 o_vSpecularExponentOut, out float2 o_vSpecularScaleOut )
 {
+
+//	o_vDiffuseExponentOut.xy = ( ( 1.0 - ( vRoughness.x + vRoughness.y ) * 0.5 ) * 0.8 ) + 0.6; // Outputs 0.6-1.4
+//	o_vSpecularExponentOut.xy = exp2( pow( 1.0 - vRoughness.xy, 1.5 ) * 14.0 ); // Outputs 1-16384
+//	o_vSpecularScaleOut.xy = 1.0 - saturate( vRoughness.xy * 0.5 ); // This is a pseudo energy conserving scalar for the roughness exponent
+	
+	
 	o_vDiffuseExponentOut.xy = ( ( 1.0 - vRoughness.xy ) * 0.8 ) + 0.6; // 0.8 and 0.6 are magic numbers
 	o_vSpecularExponentOut.xy = exp2( pow( float2( 1.0, 1.0 ) - vRoughness.xy, float2( 1.5, 1.5 ) ) * float2( 14.0, 14.0 ) ); // Outputs 1-16384
 	o_vSpecularScaleOut.xy = 1.0 - saturate( vRoughness.xy * 0.5 ); // This is an energy conserving scalar for the roughness exponent.
@@ -91,18 +100,18 @@ float BlinnPhongModifiedNormalizationFactor( float k )
 float DistanceFalloff( float flDistToLightSq, float flLightInvRadius, float2 vFalloffParams )
 {
 	// AV - My approximation to Unity's falloff function (I'll experiment with putting this into a texture later)
-	return lerp( 1.0, ( 1.0 - pow( flDistToLightSq * flLightInvRadius * flLightInvRadius, 0.175 ) ), vFalloffParams.x );
+	//return lerp( 1.0, ( 1.0 - pow( flDistToLightSq * flLightInvRadius * flLightInvRadius, 0.175 ) ), vFalloffParams.x );
 
-	// AV - This is the VR Aperture Demo falloff function
-	//flDistToLightSq = max( flDistToLightSq, 8.0f ); // Can't be inside the light source (assuming radius^2 == 8.0f)
+	//// AV - This is the VR Aperture Demo falloff function
+	flDistToLightSq = max( flDistToLightSq, 8.0f ); // Can't be inside the light source (assuming radius^2 == 8.0f)
 	//
-	//float2 vInvRadiusAndInvRadiusSq = float2( flLightInvRadius, flLightInvRadius * flLightInvRadius );
-	//float2 vLightDistAndLightDistSq = float2( sqrt( flDistToLightSq ), flDistToLightSq );
+	float2 vInvRadiusAndInvRadiusSq = float2( flLightInvRadius, flLightInvRadius * flLightInvRadius );
+	float2 vLightDistAndLightDistSq = float2( sqrt( flDistToLightSq ), flDistToLightSq );
 	//
-	//float flTruncation = dot( vFalloffParams.xy, vInvRadiusAndInvRadiusSq.xy ); // Constant amount to subtract to ensure that the light is zero past the light radius
-	//float flFalloff = dot( vFalloffParams.xy, vLightDistAndLightDistSq.xy );
+	float flTruncation = dot( vFalloffParams.xy, vInvRadiusAndInvRadiusSq.xy ); // Constant amount to subtract to ensure that the light is zero past the light radius
+	float flFalloff = dot( vFalloffParams.xy, vLightDistAndLightDistSq.xy );
 	//
-	//return saturate( ( 1.0f / flFalloff ) - flTruncation );
+	return saturate( ( 1.0f / flFalloff ) - flTruncation );
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -160,6 +169,17 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 
 			flSpecularTerm = flNDotHkX * flNDotHkY;
 		}
+
+		#elif ( S_RETROREFLECTIVE )
+		{
+			float flNDotH = saturate( dot(  vPositionToCameraDirWs.xyz , vPositionToLightDirWs.xyz ) );
+			float flNDotHk = pow( flNDotH, dot( vSpecularExponent.xy, float2( 0.5, 0.5 ) ) );
+			flNDotHk *= dot( vSpecularScale.xy, float2( 0.33333, 0.33333 ) ); // The 0.33333 is to match the spec of the aniso algorithm above with isotropic roughness values
+			flSpecularTerm = flNDotHk;
+
+
+		}
+
 		#else
 		{
 			float flNDotH = saturate( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) );
@@ -213,7 +233,7 @@ float ComputeShadow_PCF_3x3_Gaussian( float3 vPositionWs, float4x4 matWorldToSha
 	if ( ( shadowMapCenter.x < 0.0f ) || ( shadowMapCenter.x > 1.0f ) || ( shadowMapCenter.y < 0.0f ) || ( shadowMapCenter.y > 1.0f ) )
 		return 1.0f;
 
-	float objDepth = ( vPositionTextureSpace.z );
+	float objDepth = 1 - ( vPositionTextureSpace.z );
 
 	/* // Depth texture visualization
 	if ( 1 )
@@ -267,7 +287,7 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 								 float3 vReflectance, float flFresnelExponent, float4 vLightmapUV )
 {
 	LightingTerms_t o;
-	o.vDiffuse = float3( 0.0, 0.0, 0.0 );
+	o.vDiffuse = float4( 0.0, 0.0, 0.0 , 0.0);
 	o.vSpecular = float3( 0.0, 0.0, 0.0 );
 	o.vIndirectDiffuse = float3( 0.0, 0.0, 0.0 );
 	o.vIndirectSpecular = float3( 0.0, 0.0, 0.0 );
@@ -313,7 +333,7 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 			// Outside spotlight cone
 			continue;
 		}
-		float3 vSpotAtten = saturate( flTemp * g_vSpotLightInnerOuterConeCosines[ i ].z ).xxx;
+		float4 vSpotAtten = saturate( flTemp * g_vSpotLightInnerOuterConeCosines[ i ].z ).xxxx;
 
 		nNumLightsUsed++;
 
@@ -356,9 +376,9 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 																vPositionToLightDirWs.xyz, vPositionToCameraDirWs.xyz,
 																vDiffuseExponent.xy, vSpecularExponent.xy, vSpecularScale.xy, vReflectance.rgb, flFresnelExponent );
 
-		float3 vLightColor = g_vLightColor[ i ].rgb;
-		float3 vLightMask = vLightColor.rgb * flShadowScalar * flLightFalloff * vSpotAtten.rgb;
-		o.vDiffuse.rgb += vLightingTerms.xxx * vLightMask.rgb;
+		float4 vLightColor = g_vLightColor[ i ].rgba;
+		float4 vLightMask = vLightColor.rgba * flShadowScalar * flLightFalloff * vSpotAtten.rgba;
+		o.vDiffuse.rgba += vLightingTerms.xxxx * vLightMask.rgba;
 		o.vSpecular.rgb += vLightingTerms.yzw * vLightMask.rgb;
 	}
 
@@ -385,7 +405,7 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 	//*/
 
 	// Apply specular reflectance to diffuse term (specular term already accounts for this in the fresnel equation)
-	o.vDiffuse.rgb *= ( float3( 1.0, 1.0, 1.0 ) - vReflectance.rgb );
+	o.vDiffuse.rgba *= ( float4( 1.0, 1.0, 1.0 , 1.0) - vReflectance.rgbb);
 
 	//------------------//
 	// Indirect diffuse //
@@ -464,8 +484,8 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 																		o_light.dir.xyz, vPositionToCameraDirWs.xyz,
 																		vDiffuseExponent.xy, vSpecularExponent.xy, vSpecularScale.xy, vReflectance.rgb, flFresnelExponent );
 
-				float3 vLightColor = o_light.color;
-				float3 vLightMask = vLightColor.rgb;
+				float4 vLightColor = float4(_LightColor0.rgb , _LightColor0.a);
+				float4 vLightMask = vLightColor.rgba;
 				o.vSpecular.rgb += vLightingTerms.yzw * vLightMask.rgb;
 			}
 		}
@@ -506,8 +526,8 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 																	o_light.dir.xyz, vPositionToCameraDirWs.xyz,
 																	vDiffuseExponent.xy, vSpecularExponent.xy, vSpecularScale.xy, vReflectance.rgb, flFresnelExponent );
 
-			float3 vLightColor = o_light.color;
-			float3 vLightMask = vLightColor.rgb;
+			float4 vLightColor = float4(_LightColor0.rgb, _LightColor0.a);
+			float4 vLightMask = vLightColor.rgba;
 			o.vSpecular.rgb += vLightingTerms.yzw * vLightMask.rgb;
 		}
 		#endif
@@ -525,7 +545,16 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 		float3 vReflectionDirWs0 = vReflectionDirWs.xyz;
 		#if ( UNITY_SPECCUBE_BOX_PROJECTION )
 		{
+			#if ( S_RETROREFLECTIVE )
+			{
+			vReflectionDirWs0.xyz = BoxProjectedCubemapDirection( vPositionToCameraDirWs.xyz, vPositionWs.xyz, unity_SpecCube0_ProbePosition, unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax );
+			}
+			#else
+			{
 			vReflectionDirWs0.xyz = BoxProjectedCubemapDirection( vReflectionDirWs.xyz, vPositionWs.xyz, unity_SpecCube0_ProbePosition, unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax );
+			}
+
+			#endif
 		}
 		#endif
 
@@ -540,7 +569,20 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 				float3 vReflectionDirWs1 = vReflectionDirWs.xyz;
 				#if ( UNITY_SPECCUBE_BOX_PROJECTION )
 				{
-					vReflectionDirWs1.xyz = BoxProjectedCubemapDirection( vReflectionDirWs.xyz, vPositionWs.xyz, unity_SpecCube1_ProbePosition, unity_SpecCube1_BoxMin, unity_SpecCube1_BoxMax );
+
+				#if ( S_RETROREFLECTIVE )
+				{
+					
+					vReflectionDirWs1.xyz = BoxProjectedCubemapDirection( vPositionToCameraDirWs.xyz, vPositionWs.xyz, unity_SpecCube1_ProbePosition, unity_SpecCube1_BoxMin, unity_SpecCube1_BoxMax );
+
+				}
+
+				#else
+				{
+						vReflectionDirWs1.xyz = BoxProjectedCubemapDirection( vReflectionDirWs.xyz, vPositionWs.xyz, unity_SpecCube1_ProbePosition, unity_SpecCube1_BoxMin, unity_SpecCube1_BoxMax );
+				}
+				#endif
+
 				}
 				#endif
 
@@ -560,10 +602,12 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 	}
 	#endif
 
+	
+
 	// Apply fresnel to indirect specular
 	float flVDotN = saturate( dot( vPositionToCameraDirWs.xyz, vNormalWs.xyz ) );
 	float3 vMaxReflectance = ( ( vReflectance.rgb + 0.001 ) / Luminance( vReflectance.rgb + 0.001 ) ) * g_flReflectanceMax;
-	float3 vFresnel = lerp( vReflectance.rgb, vMaxReflectance.rgb, pow( 1.0 - flVDotN, flFresnelExponent ) );
+	float3 vFresnel = lerp( vReflectance.rgb, vMaxReflectance.rgb * g_flFresnelFalloff, pow( 1.0 - flVDotN, flFresnelExponent ) );
 
 	o.vIndirectSpecular.rgb *= vFresnel.rgb;
 	o.vIndirectSpecular.rgb *= g_flCubeMapScalar; // !!! FIXME: This also contains lightmap spec
