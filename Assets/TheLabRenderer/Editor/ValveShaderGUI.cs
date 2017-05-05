@@ -24,8 +24,9 @@ internal class ValveShaderGUI : ShaderGUI
 	{
 		None,
 		BlinnPhong,
-		Metallic
-		//Anisotropic
+		Metallic,
+		Anisotropic,
+        Retroreflective
 	}
 
 	private static class Styles
@@ -39,13 +40,16 @@ internal class ValveShaderGUI : ShaderGUI
 		public static string emptyTootip = "";
 		public static GUIContent albedoText = new GUIContent("Albedo", "Albedo (RGB) and Transparency (A)");
 		public static GUIContent alphaCutoffText = new GUIContent("Alpha Cutoff", "Threshold for alpha cutoff");
+        public static GUIContent FluorescenceText = new GUIContent("Fluorescence", "Fluorescence (RGB), takes MAX color value of this and albedo");
 		public static GUIContent specularMapText = new GUIContent("Specular", "Reflectance (RGB) and Gloss (A)");
 		public static GUIContent reflectanceMinText = new GUIContent( "Reflectance Min", "" );
 		public static GUIContent reflectanceMaxText = new GUIContent( "Reflectance Max", "" );
-		public static GUIContent metallicMapText = new GUIContent( "Metallic", "Metallic (R) and Gloss (A)" );
+        public static GUIContent metallicMapText = new GUIContent("Metallic", "Metallic (R), Gloss (A), and extra Anisotropic Gloss dir (G) ");
 		public static GUIContent smoothnessText = new GUIContent("Gloss", "");
+        public static GUIContent smoothnessText2 = new GUIContent("Gloss2", "");
 		public static GUIContent normalMapText = new GUIContent("Normal", "Normal Map");
 		//public static GUIContent heightMapText = new GUIContent("Height Map", "Height Map (G)");
+        public static GUIContent fresnelfallofftext = new GUIContent("Fresnel Falloff Scalar", "");
 		public static GUIContent cubeMapScalarText = new GUIContent( "Cube Map Scalar", "" );
 		public static GUIContent occlusionText = new GUIContent("Occlusion", "Occlusion (G)");
 		public static GUIContent occlusionStrengthDirectDiffuseText = new GUIContent( "Occlusion Direct Diffuse", "" );
@@ -88,8 +92,10 @@ internal class ValveShaderGUI : ShaderGUI
 	MaterialProperty metallicMap = null;
 	MaterialProperty metallic = null;
 	MaterialProperty smoothness = null;
+    MaterialProperty smoothness2 = null;
 	MaterialProperty bumpScale = null;
 	MaterialProperty bumpMap = null;
+    MaterialProperty FresnelFalloffScalar = null;
 	MaterialProperty cubeMapScalar = null;
 	MaterialProperty occlusionStrength = null;
 	MaterialProperty occlusionMap = null;
@@ -101,6 +107,8 @@ internal class ValveShaderGUI : ShaderGUI
 	//MaterialProperty heightMap = null;
 	MaterialProperty emissionColorForRendering = null;
 	MaterialProperty emissionMap = null;
+    MaterialProperty fluorescenceMap = null;
+    MaterialProperty fluorescenceColor = null;
 	MaterialProperty detailMask = null;
 	MaterialProperty detailAlbedoMap = null;
 	MaterialProperty detailNormalMapScale = null;
@@ -134,10 +142,12 @@ internal class ValveShaderGUI : ShaderGUI
 		metallicMap = FindProperty ("_MetallicGlossMap", props, false);
 		metallic = FindProperty ("_Metallic", props, false);
 		smoothness = FindProperty ("_Glossiness", props);
+        smoothness2 = FindProperty("_Glossiness2", props);
 		bumpScale = FindProperty ("_BumpScale", props);
 		bumpMap = FindProperty ("_BumpMap", props);
 		//heigtMapScale = FindProperty ("_Parallax", props);
 		//heightMap = FindProperty("_ParallaxMap", props);
+        FresnelFalloffScalar = FindProperty("g_flFresnelFalloff", props);
 		cubeMapScalar = FindProperty( "g_flCubeMapScalar", props );
 		occlusionStrength = FindProperty ("_OcclusionStrength", props);
 		occlusionStrengthDirectDiffuse = FindProperty( "_OcclusionStrengthDirectDiffuse", props );
@@ -147,6 +157,8 @@ internal class ValveShaderGUI : ShaderGUI
 		occlusionMap = FindProperty ("_OcclusionMap", props);
 		emissionColorForRendering = FindProperty ("_EmissionColor", props);
 		emissionMap = FindProperty ("_EmissionMap", props);
+        fluorescenceMap = FindProperty ("_FluorescenceMap", props);
+        fluorescenceColor = FindProperty ("_FluorescenceColor", props);
 		detailMask = FindProperty ("_DetailMask", props);
 		detailAlbedoMap = FindProperty ("_DetailAlbedoMap", props);
 		detailNormalMapScale = FindProperty ("_DetailNormalMapScale", props);
@@ -216,6 +228,8 @@ internal class ValveShaderGUI : ShaderGUI
 			DoAlbedoArea( material );
 			if ( !bUnlit )
 			{
+                DoFluorescenceArea(material);
+
 				m_MaterialEditor.TexturePropertySingleLine( Styles.normalMapText, bumpMap, bumpMap.textureValue != null ? bumpScale : null );
 				DoSpecularMetallicArea( material );
 				m_MaterialEditor.TexturePropertySingleLine( Styles.occlusionText, occlusionMap, occlusionMap.textureValue != null ? occlusionStrength : null );
@@ -226,8 +240,12 @@ internal class ValveShaderGUI : ShaderGUI
 					m_MaterialEditor.ShaderProperty( occlusionStrengthIndirectDiffuse, Styles.occlusionStrengthIndirectDiffuseText.text, 2 );
 					m_MaterialEditor.ShaderProperty( occlusionStrengthIndirectSpecular, Styles.occlusionStrengthIndirectSpecularText.text, 2 );
 				}
+                m_MaterialEditor.ShaderProperty(FresnelFalloffScalar, Styles.fresnelfallofftext.text, 0);
 				m_MaterialEditor.ShaderProperty( cubeMapScalar, Styles.cubeMapScalarText.text, 0 );
 			}
+
+
+
 			//m_MaterialEditor.TexturePropertySingleLine(Styles.heightMapText, heightMap, heightMap.textureValue != null ? heigtMapScale : null);
 			DoEmissionArea( material );
 			m_MaterialEditor.TexturePropertySingleLine( Styles.detailMaskText, detailMask );
@@ -358,6 +376,14 @@ internal class ValveShaderGUI : ShaderGUI
 		}
 	}
 
+
+
+    void DoFluorescenceArea(Material material)
+    {
+        m_MaterialEditor.TexturePropertySingleLine(Styles.FluorescenceText, fluorescenceMap, fluorescenceColor);
+    }
+
+
 	void DoEmissionArea(Material material)
 	{
 		float brightness = emissionColorForRendering.colorValue.maxColorComponent;
@@ -412,6 +438,27 @@ internal class ValveShaderGUI : ShaderGUI
 			else
 				m_MaterialEditor.TexturePropertySingleLine(Styles.metallicMapText, metallicMap);
 		}
+
+        else if (specularMode == SpecularMode.Anisotropic)
+        {
+            if (metallicMap.textureValue == null)
+            {
+                m_MaterialEditor.TexturePropertyTwoLines(Styles.metallicMapText, metallicMap, metallic, Styles.smoothnessText, smoothness);
+                m_MaterialEditor.ShaderProperty(smoothness2, Styles.smoothnessText2);
+            }
+            else
+                m_MaterialEditor.TexturePropertySingleLine(Styles.metallicMapText, metallicMap);
+        }
+        else if (specularMode == SpecularMode.Retroreflective)
+
+        {
+            if (metallicMap.textureValue == null)
+                m_MaterialEditor.TexturePropertyTwoLines(Styles.metallicMapText, metallicMap, metallic, Styles.smoothnessText, smoothness);
+            else
+                m_MaterialEditor.TexturePropertySingleLine(Styles.metallicMapText, metallicMap);
+        }
+
+
 	}
 
 	public static void SetupMaterialWithBlendMode(Material material, BlendMode blendMode)
@@ -496,9 +543,22 @@ internal class ValveShaderGUI : ShaderGUI
 		{
 			SetKeyword( material, "_METALLICGLOSSMAP", material.GetTexture( "_MetallicGlossMap" ) );
 		}
+        else if (specularMode == SpecularMode.Anisotropic)
+        {  
+            SetKeyword(material, "_METALLICGLOSSMAP", material.GetTexture( "_MetallicGlossMap" ));
+        }
+        else if (specularMode == SpecularMode.Retroreflective)
+        {
+            SetKeyword(material, "_METALLICGLOSSMAP", material.GetTexture("_MetallicGlossMap"));
+        }
+
+
+
 		SetKeyword( material, "S_SPECULAR_NONE", specularMode == SpecularMode.None );
 		SetKeyword( material, "S_SPECULAR_BLINNPHONG", specularMode == SpecularMode.BlinnPhong );
 		SetKeyword( material, "S_SPECULAR_METALLIC", specularMode == SpecularMode.Metallic );
+        SetKeyword( material, "S_ANISOTROPIC_GLOSS", specularMode == SpecularMode.Anisotropic);
+        SetKeyword( material, "S_RETROREFLECTIVE", specularMode == SpecularMode.Retroreflective);
 		SetKeyword( material, "S_OCCLUSION", material.GetTexture("_OcclusionMap") );
 
 		SetKeyword( material, "_PARALLAXMAP", material.GetTexture("_ParallaxMap"));
@@ -508,6 +568,7 @@ internal class ValveShaderGUI : ShaderGUI
 		SetKeyword( material, "S_UNLIT", material.GetInt( "g_bUnlit" ) == 1 );
 		SetKeyword( material, "S_RECEIVE_SHADOWS", material.GetInt( "g_bReceiveShadows" ) == 1 );
 		SetKeyword( material, "S_WORLD_ALIGNED_TEXTURE", material.GetInt( "g_bWorldAlignedTexture" ) == 1 );
+        SetKeyword( material, "_FLUORESCENCEMAP", material.GetTexture("_FluorescenceMap"));
 
 		bool shouldEmissionBeEnabled = ShouldEmissionBeEnabled (material.GetColor("_EmissionColor"));
 		SetKeyword (material, "_EMISSION", shouldEmissionBeEnabled);
