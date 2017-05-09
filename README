@@ -1,13 +1,14 @@
 
-Modified Lab Renderer
+Modified Lab Renderer --- Updated for Unity 2017.1.0b4
+
 
 Added new methods of light transport to help add to realism.
 
 Some new features:
 
 -Fluorescence (Also including UV light from light Alpha)
--Retroreflective 
--Anisotropic
+-Retroreflective (Great for reflectors)
+-Anisotropic (G chanel in MetallicTex controls second term)
 -Proper edge falloff Scaler (cubemap scaler is hacky)
 
 -------
