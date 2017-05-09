@@ -33,8 +33,8 @@ public class ValveCamera : MonoBehaviour
 	[Range( 1024.0f, 1024.0f * 8.0f )] public int m_valveShadowTextureWidth = 1024 * 4;
 	[Range( 1024.0f, 1024.0f * 8.0f )] public int m_valveShadowTextureHeight = 1024 * 4;
 
-	//[Tooltip( "Might cause shadow acne on skinned meshes, but can be more efficient in scenes without skinned meshes" )]
-	//public bool m_renderShadowsInLateUpdate = false;
+	[Tooltip( "Might cause shadow acne on skinned meshes, but can be more efficient in scenes without skinned meshes" )]
+	public bool m_renderShadowsInLateUpdate = true;
 
 	[NonSerialized] private Camera m_shadowCamera = null;
 	[NonSerialized] public RenderTexture m_shadowDepthTexture = null;
@@ -445,10 +445,13 @@ public class ValveCamera : MonoBehaviour
 	{
 		//Debug.Log( "LateUpdate() " + this.name + "\n\n" );
 		//MyEditorUpdate();
-		//if ( m_renderShadowsInLateUpdate )
-		//{
-		//	ValveShadowBufferRender();
-		//}
+        if (m_renderShadowsInLateUpdate)
+        {
+            ValveShadowBufferRender();
+        }
+
+        UpdateAdaptiveQuality();
+
 
 		// Adaptive quality debug quad
 		if ( Application.isPlaying )
@@ -496,7 +499,7 @@ public class ValveCamera : MonoBehaviour
 				{
 					0, 1, 2, 0, 2, 3
 				};
-				mesh.Optimize();
+				;
 				mesh.UploadMeshData( false );
 
 				m_adaptiveQualityDebugQuad = new GameObject( "AdaptiveQualityDebugQuad" );
@@ -522,8 +525,8 @@ public class ValveCamera : MonoBehaviour
 	//---------------------------------------------------------------------------------------------------------------------------------------------------
 	void OnPreCull()
 	{
-		UpdateAdaptiveQuality();
-		//if ( !m_renderShadowsInLateUpdate )
+		//UpdateAdaptiveQuality();
+		if ( !m_renderShadowsInLateUpdate )
 		{
 			ValveShadowBufferRender();
 		}
@@ -1218,6 +1221,10 @@ public class ValveCamera : MonoBehaviour
 			vl.m_shadowTransform[ nNumPointLightShadowFacesAdded ] = matTile * matScaleBias * m_shadowCamera.projectionMatrix * m_shadowCamera.worldToCameraMatrix;
 			vl.m_lightCookieTransform[ nNumPointLightShadowFacesAdded ] = matScaleBias * m_shadowCamera.projectionMatrix * m_shadowCamera.worldToCameraMatrix;
 
+
+
+
+
 			// Set shader constants
 			Shader.SetGlobalVector( "g_vLightDirWs", new Vector4( l.transform.forward.normalized.x, l.transform.forward.normalized.y, l.transform.forward.normalized.z ) );
 
@@ -1280,7 +1287,7 @@ public class ValveCamera : MonoBehaviour
 					continue;
 
 				float flIntensity = ( l.intensity <= 1.0f ) ? l.intensity : l.intensity * l.intensity;
-				g_vLightColor[ g_nNumLights ] = new Vector4( l.color.linear.r * flIntensity, l.color.linear.g * flIntensity, l.color.linear.b * flIntensity );
+				g_vLightColor[ g_nNumLights ] = new Vector4( l.color.linear.r * flIntensity, l.color.linear.g * flIntensity, l.color.linear.b * flIntensity, (-l.color.linear.a + 1) * flIntensity) ;
 				g_vLightPosition_flInvRadius[ g_nNumLights ] = new Vector4( l.transform.position.x - ( l.transform.forward.normalized.x * DIRECTIONAL_LIGHT_PULLBACK_DISTANCE ),
 																			l.transform.position.y - ( l.transform.forward.normalized.y * DIRECTIONAL_LIGHT_PULLBACK_DISTANCE ),
 																			l.transform.position.z - ( l.transform.forward.normalized.z * DIRECTIONAL_LIGHT_PULLBACK_DISTANCE ),
@@ -1307,7 +1314,7 @@ public class ValveCamera : MonoBehaviour
 					continue;
 
 				float flIntensity = ( l.intensity <= 1.0f ) ? l.intensity : l.intensity * l.intensity;
-				g_vLightColor[ g_nNumLights ] = new Vector4( l.color.linear.r * flIntensity, l.color.linear.g * flIntensity, l.color.linear.b * flIntensity );
+				g_vLightColor[ g_nNumLights ] = new Vector4( l.color.linear.r * flIntensity, l.color.linear.g * flIntensity, l.color.linear.b * flIntensity , (-l.color.linear.a + 1) * flIntensity);
 				g_vLightPosition_flInvRadius[ g_nNumLights ] = new Vector4( l.transform.position.x, l.transform.position.y, l.transform.position.z, 1.0f / l.range );
 				g_vLightDirection[ g_nNumLights ] = new Vector4( 0.0f, 0.0f, 0.0f );
 				g_vLightShadowIndex_vLightParams[ g_nNumLights ] = new Vector4( 0, 0, 1, 1 );
@@ -1382,7 +1389,7 @@ public class ValveCamera : MonoBehaviour
 					continue;
 				
 				float flIntensity = ( l.intensity <= 1.0f ) ? l.intensity : l.intensity * l.intensity;
-				g_vLightColor[ g_nNumLights ] = new Vector4( l.color.linear.r * flIntensity, l.color.linear.g * flIntensity, l.color.linear.b * flIntensity );
+                g_vLightColor[g_nNumLights] = new Vector4(l.color.linear.r * flIntensity, l.color.linear.g * flIntensity, l.color.linear.b * flIntensity, (-l.color.linear.a + 1) * flIntensity);
 				g_vLightPosition_flInvRadius[ g_nNumLights ] = new Vector4( l.transform.position.x, l.transform.position.y, l.transform.position.z, 1.0f / l.range );
 				g_vLightDirection[ g_nNumLights ] = new Vector4( l.transform.forward.normalized.x, l.transform.forward.normalized.y, l.transform.forward.normalized.z );
 				g_vLightShadowIndex_vLightParams[ g_nNumLights ] = new Vector4( 0, 0, 1, 1 );
@@ -1561,11 +1568,11 @@ public class ValveCameraInspector : Editor
 
 		ValveCamera valveCamera = target as ValveCamera;
 
-		//for ( int i = 0; i < Camera.allCameras.Length; i++ )
-		//{
-		//	GUILayout.Label( "Camera " + i + " \"" + Camera.allCameras[ i ].name + "\"" );
-		//}
-		//EditorGUILayout.Space();
+		for ( int i = 0; i < Camera.allCameras.Length; i++ )
+		{
+			GUILayout.Label( "Camera " + i + " \"" + Camera.allCameras[ i ].name + "\"" );
+		}
+		EditorGUILayout.Space();
 
 		if ( valveCamera.m_hideAllValveMaterials )
 		{

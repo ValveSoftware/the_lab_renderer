@@ -100,18 +100,18 @@ float BlinnPhongModifiedNormalizationFactor( float k )
 float DistanceFalloff( float flDistToLightSq, float flLightInvRadius, float2 vFalloffParams )
 {
 	// AV - My approximation to Unity's falloff function (I'll experiment with putting this into a texture later)
-	//return lerp( 1.0, ( 1.0 - pow( flDistToLightSq * flLightInvRadius * flLightInvRadius, 0.175 ) ), vFalloffParams.x );
+	return lerp( 1.0, ( 1.0 - pow( flDistToLightSq * flLightInvRadius * flLightInvRadius, 0.175 ) ), vFalloffParams.x );
 
-	//// AV - This is the VR Aperture Demo falloff function
-	flDistToLightSq = max( flDistToLightSq, 8.0f ); // Can't be inside the light source (assuming radius^2 == 8.0f)
-	//
-	float2 vInvRadiusAndInvRadiusSq = float2( flLightInvRadius, flLightInvRadius * flLightInvRadius );
-	float2 vLightDistAndLightDistSq = float2( sqrt( flDistToLightSq ), flDistToLightSq );
-	//
-	float flTruncation = dot( vFalloffParams.xy, vInvRadiusAndInvRadiusSq.xy ); // Constant amount to subtract to ensure that the light is zero past the light radius
-	float flFalloff = dot( vFalloffParams.xy, vLightDistAndLightDistSq.xy );
-	//
-	return saturate( ( 1.0f / flFalloff ) - flTruncation );
+//	//// AV - This is the VR Aperture Demo falloff function
+//	flDistToLightSq = max( flDistToLightSq, 8.0f ); // Can't be inside the light source (assuming radius^2 == 8.0f)
+//	//
+//	float2 vInvRadiusAndInvRadiusSq = float2( flLightInvRadius, flLightInvRadius * flLightInvRadius );
+//	float2 vLightDistAndLightDistSq = float2( sqrt( flDistToLightSq ), flDistToLightSq );
+//	//
+//	float flTruncation = dot( vFalloffParams.xy, vInvRadiusAndInvRadiusSq.xy ); // Constant amount to subtract to ensure that the light is zero past the light radius
+//	float flFalloff = dot( vFalloffParams.xy, vLightDistAndLightDistSq.xy );
+//	//
+//	return saturate( ( 1.0f / flFalloff ) - flTruncation );
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -141,7 +141,7 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 		flDiffuseTerm = flNDotLX * flNDotLY;
 		flDiffuseTerm *= ( ( vDiffuseExponent.x * 0.5 + vDiffuseExponent.y * 0.5 ) + 1.0 ) * 0.5;
 		flDiffuseTerm *= flNDotL;
-		//*/
+		*/
 
 		float flDiffuseExponent = ( vDiffuseExponent.x + vDiffuseExponent.y ) * 0.5;
 		flDiffuseTerm = pow( flNDotL, flDiffuseExponent ) * ( ( flDiffuseExponent + 1.0 ) * 0.5 );

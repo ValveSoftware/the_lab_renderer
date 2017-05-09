@@ -1,4 +1,6 @@
-﻿// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
 
 Shader "Valve/vr_photogrammetry"
 {
@@ -85,7 +87,7 @@ Shader "Valve/vr_photogrammetry"
 					// Position
 					i.vPositionOs.xyzw *= g_flValveGlobalVertexScale; // Used to "hide" all valve materials for debugging
 					o.vPositionWs.xyz = mul( unity_ObjectToWorld, i.vPositionOs.xyzw ).xyz;
-					o.vPositionPs.xyzw = mul( UNITY_MATRIX_MVP, i.vPositionOs.xyzw );
+					o.vPositionPs.xyzw = UnityObjectToClipPos( i.vPositionOs.xyzw );
 
 					// Texture coordinates
 					o.vTextureCoords.xy = TRANSFORM_TEX( i.vTexCoord0.xy, _MainTex );

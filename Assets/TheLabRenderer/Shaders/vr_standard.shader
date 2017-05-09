@@ -1,4 +1,6 @@
-﻿// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
 
 Shader "Valve/vr_standard"
 {
@@ -43,7 +45,7 @@ Shader "Valve/vr_standard"
 		_EmissionColor( "Color", Color ) = ( 0, 0, 0 )
 		_EmissionMap( "Emission", 2D ) = "white" {}
 
-		_FluorescenceMap( "Fluorescence", 2D ) = "black" {}
+		_FluorescenceMap( "Fluorescence", 2D ) = "white" {}
 		_FluorescenceColor("Fluorescence Color" , Color ) = (0,0,0)
 		
 		_DetailMask( "Detail Mask", 2D ) = "white" {}
@@ -252,7 +254,7 @@ Shader "Valve/vr_standard"
 						o.vPositionWs.xyz = vPositionWs.xyz;
 					}
 					#endif
-					o.vPositionPs.xyzw = mul( UNITY_MATRIX_MVP, i.vPositionOs.xyzw );
+					o.vPositionPs.xyzw = UnityObjectToClipPos( i.vPositionOs.xyzw );
 
 					// Normal
 					float3 vNormalWs = UnityObjectToWorldNormal( i.vNormalOs.xyz );
@@ -397,11 +399,11 @@ Shader "Valve/vr_standard"
 					//--------------//
 					// Fluorescence //
 					//--------------//
+					#if ( _FLUORESCENCEMAP)
+					//float3 vFluorescence = max(tex2D( g_tFluorescenceMap, i.vTextureCoords.xy ).rgb, g_vColorFluorescence.rgb);
+					float3 vFluorescence = tex2D( g_tFluorescenceMap, i.vTextureCoords.xy ).rgb * g_vColorFluorescence.rgb;
 
-					float3 vFluorescence = max(tex2D( g_tFluorescenceMap, i.vTextureCoords.xy ).rgb, g_vColorFluorescence.rgb);
-
-
-
+					#endif
 
 
 					//--------------//
@@ -621,7 +623,7 @@ Shader "Valve/vr_standard"
 
 
 					// Fluorescence
-					//#if (
+					#if ( _FLUORESCENCEMAP )
 			
 
 					float3 LitFluorescence =  float3(
@@ -631,6 +633,7 @@ Shader "Valve/vr_standard"
 													) 
 													* vFluorescence.rgb ;
 					o.vColor.rgb = max(o.vColor.rgb, LitFluorescence.rgb);
+					#endif
 					//)
 
 					// Specular

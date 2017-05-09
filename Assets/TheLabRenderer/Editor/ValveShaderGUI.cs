@@ -528,6 +528,8 @@ internal class ValveShaderGUI : ShaderGUI
 		return color.maxColorComponent > (0.1f / 255.0f);
 	}
 
+
+
 	static void SetMaterialKeywords(Material material)
 	{
 		// Note: keywords must be based on Material value not on MaterialProperty due to multi-edit & material animation
@@ -568,7 +570,15 @@ internal class ValveShaderGUI : ShaderGUI
 		SetKeyword( material, "S_UNLIT", material.GetInt( "g_bUnlit" ) == 1 );
 		SetKeyword( material, "S_RECEIVE_SHADOWS", material.GetInt( "g_bReceiveShadows" ) == 1 );
 		SetKeyword( material, "S_WORLD_ALIGNED_TEXTURE", material.GetInt( "g_bWorldAlignedTexture" ) == 1 );
-        SetKeyword( material, "_FLUORESCENCEMAP", material.GetTexture("_FluorescenceMap"));
+        //SetKeyword( material, "_FLUORESCENCEMAP", material.GetTexture("_FluorescenceMap"));
+
+			if ((material.GetColor ("_FluorescenceColor")).maxColorComponent < (0.1f / 255.0f) ) {
+				SetKeyword (material, "_FLUORESCENCEMAP", false);
+			} else {
+				SetKeyword (material, "_FLUORESCENCEMAP", true);
+
+			}
+
 
 		bool shouldEmissionBeEnabled = ShouldEmissionBeEnabled (material.GetColor("_EmissionColor"));
 		SetKeyword (material, "_EMISSION", shouldEmissionBeEnabled);

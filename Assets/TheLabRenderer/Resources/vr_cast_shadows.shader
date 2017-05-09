@@ -1,4 +1,6 @@
-﻿// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
 
 Shader "Valve/Internal/vr_cast_shadows"
 {
@@ -76,7 +78,7 @@ Shader "Valve/Internal/vr_cast_shadows"
 					float2 vShadowOffsets = GetShadowOffsets( vNormalWs.xyz, g_vLightDirWs.xyz );
 					//vPositionWs.xyz -= vShadowOffsets.x * vNormalWs.xyz / 100;
 					vPositionWs.xyz += vShadowOffsets.y * g_vLightDirWs.xyz / 1000;
-					o.vPositionPs.xyzw = mul( UNITY_MATRIX_MVP, float4( mul( unity_WorldToObject, float4( vPositionWs.xyz, 1.0 ) ).xyz, 1.0 ) );
+					o.vPositionPs.xyzw = UnityObjectToClipPos( float4( mul( unity_WorldToObject, float4( vPositionWs.xyz, 1.0 ) ).xyz, 1.0 ) );
 
 					return o;
 				}
