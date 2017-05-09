@@ -1,11 +1,11 @@
 
 Modified Lab Renderer
 
-Added new ways for light transport to help add to realism.
+Added new methods of light transport to help add to realism.
 
 Some new features:
 
--Fluorescence 
+-Fluorescence (Also including UV light from light Alpha)
 -Retroreflective 
 -Anisotropic
 -Proper edge falloff Scaler (cubemap scaler is hacky)
