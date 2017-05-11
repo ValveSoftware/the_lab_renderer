@@ -8,8 +8,8 @@ Material:
   m_PrefabInternal: {fileID: 0}
   m_Name: valves_base
   m_Shader: {fileID: 4800000, guid: 908b379d4818cd64184b95a21123d909, type: 3}
-  m_ShaderKeywords: S_OCCLUSION S_RECEIVE_SHADOWS S_SPECULAR_METALLIC _FLUORESCENCEMAP
-    _METALLICGLOSSMAP _NORMALMAP
+  m_ShaderKeywords: S_OCCLUSION S_RECEIVE_SHADOWS S_SPECULAR_METALLIC _METALLICGLOSSMAP
+    _NORMALMAP
   m_LightmapFlags: 5
   m_EnableInstancingVariants: 0
   m_CustomRenderQueue: -1

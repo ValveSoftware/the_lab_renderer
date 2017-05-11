@@ -814,8 +814,11 @@ public class ValveCamera : MonoBehaviour
 
 		if ( VRSettings.enabled )
 		{
-			VRSettings.renderScale = flRenderTargetScale;
-			VRSettings.renderViewportScale = ( m_adaptiveQualityRenderScaleArray[ nAdaptiveQualityLevel ] / flRenderTargetScale ) * flAdditionalViewportScale;
+            //Unity 2017 fix
+            VRSettings.renderScale = (m_adaptiveQualityRenderScaleArray[nAdaptiveQualityLevel] / flRenderTargetScale) * flAdditionalViewportScale;
+
+			//VRSettings.renderScale = flRenderTargetScale;
+			//VRSettings.renderViewportScale = ( m_adaptiveQualityRenderScaleArray[ nAdaptiveQualityLevel ] / flRenderTargetScale ) * flAdditionalViewportScale;
 			//Debug.Log( "VRSettings.renderScale " + VRSettings.renderScale + " VRSettings.renderViewportScale " + VRSettings.renderViewportScale + "\n\n" );
 		}
 
@@ -1222,6 +1225,14 @@ public class ValveCamera : MonoBehaviour
 			vl.m_lightCookieTransform[ nNumPointLightShadowFacesAdded ] = matScaleBias * m_shadowCamera.projectionMatrix * m_shadowCamera.worldToCameraMatrix;
 
 
+            //tie in Unity Light bias
+            //if (l.type == LightType.Directional)
+            //    Shader.SetGlobalVector("unity_LightShadowBias", new Vector4(-l.shadowBias, 1, l.shadowNormalBias * (1.0f / vl.m_shadowResolution), 0)); // x value is wrong, can't figure it out?
+            //else
+            //    Shader.SetGlobalVector("unity_LightShadowBias", new Vector4(-l.shadowBias, 0, 0, 0)); // spot setup, Lab fakes point light shadows with spots
+            //end tie in    
+
+            //Shader.SetGlobalTexture("g_tVrLightCookieTexture", vl.m_cachedLight.cookie);
 
 
 

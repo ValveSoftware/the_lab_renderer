@@ -60,6 +60,7 @@ internal class ValveShaderGUI : ShaderGUI
 		public static GUIContent detailMaskText = new GUIContent("Detail Mask", "Mask for Secondary Maps (A)");
 		public static GUIContent detailAlbedoText = new GUIContent("Detail Albedo", "Detail Albedo (RGB) multiplied by 2");
 		public static GUIContent detailNormalMapText = new GUIContent("Detail Normal", "Detail Normal Map");
+        public static GUIContent castShadowsText = new GUIContent("Cast shadows", "");
 		public static GUIContent receiveShadowsText = new GUIContent( "Receive Shadows", "" );
 		public static GUIContent renderBackfacesText = new GUIContent( "Render Backfaces", "" );
 		public static GUIContent overrideLightmapText = new GUIContent( "Override Lightmap", "Requires ValveOverrideLightmap.cs scrip on object" );
@@ -114,6 +115,7 @@ internal class ValveShaderGUI : ShaderGUI
 	MaterialProperty detailNormalMapScale = null;
 	MaterialProperty detailNormalMap = null;
 	MaterialProperty uvSetSecondary = null;
+    MaterialProperty castShadows = null;
 	MaterialProperty receiveShadows = null;
 	MaterialProperty renderBackfaces = null;
 	MaterialProperty overrideLightmap = null;
@@ -164,6 +166,7 @@ internal class ValveShaderGUI : ShaderGUI
 		detailNormalMapScale = FindProperty ("_DetailNormalMapScale", props);
 		detailNormalMap = FindProperty ("_DetailNormalMap", props);
 		uvSetSecondary = FindProperty ("_UVSec", props);
+        castShadows = FindProperty("g_bCastShadows", props);
 		receiveShadows = FindProperty( "g_bReceiveShadows", props );
 		renderBackfaces = FindProperty( "g_bRenderBackfaces", props );
 		overrideLightmap = FindProperty( "g_tOverrideLightmap", props );
@@ -214,6 +217,9 @@ internal class ValveShaderGUI : ShaderGUI
 			{
 				SpecularModePopup();
 			}
+
+            m_MaterialEditor.ShaderProperty(castShadows, Styles.castShadowsText.text);
+            bool bCastShadows = (castShadows.floatValue != 0.0f);
 
 			if ( !bUnlit )
 			{
@@ -649,6 +655,8 @@ internal class ValveShaderGUI : ShaderGUI
 		SetupMaterialWithBlendMode(material, (BlendMode)material.GetFloat("_Mode"));
 
 		SetMaterialKeywords(material);
+        if (material.GetFloat("g_bCastShadows") == 0.0f)
+            material.SetOverrideTag("RenderType", "DO_NOT_RENDER");
 	}
 
 	static void SetKeyword(Material m, string keyword, bool state)

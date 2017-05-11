@@ -8,6 +8,7 @@
 #include "UnityStandardBRDF.cginc"
 
 #define Tex2DLevel( name, uv, flLevel ) name.SampleLevel( sampler##name, ( uv ).xy, flLevel )
+//#define Tex3DLevel( name, uv, flLevel ) name.SampleLevel( sampler3D##name, ( uv ).xyz, flLevel )
 #define Tex2DLevelFromSampler( texturename, samplername, uv, flLevel ) texturename.SampleLevel( sampler##samplername, ( uv ).xy, flLevel )
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -30,11 +31,13 @@ CBUFFER_START( ValveVrLighting )
 	float4 g_vShadow3x3PCFTerms2;
 	float4 g_vShadow3x3PCFTerms3;
 
+
 	float4x4 g_matWorldToLightCookie[ MAX_LIGHTS ];
 CBUFFER_END
 
 // Override lightmap
 sampler2D g_tOverrideLightmap;
+//sampler3D g_tVrLightCookieTexture;
 uniform float3 g_vOverrideLightmapScale;
 
 float g_flCubeMapScalar  = 1.0;
@@ -182,6 +185,17 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 
 		#else
 		{
+
+		//		float flNDotH = saturate( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) );
+		//		float flNDotL = saturate( dot( vNormalWs.xyz, vPositionToLightDirWs.xyz ) );
+		////		float flNDotV = saturate( dot( vNormalWs.xyz,  ) );
+
+		//	    float visTerm = SmithJointGGXVisibilityTerm( flNDotL, NdotV, vSpecularExponent.x );
+  //              float normTerm = GGXTerm(flNDotH, roughness);
+  //              float flSpecularTerm = (visTerm*normTerm) * UNITY_PI;
+
+
+
 			float flNDotH = saturate( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) );
 			float flNDotHk = pow( flNDotH, dot( vSpecularExponent.xy, float2( 0.5, 0.5 ) ) );
 			flNDotHk *= dot( vSpecularScale.xy, float2( 0.33333, 0.33333 ) ); // The 0.33333 is to match the spec of the aniso algorithm above with isotropic roughness values
@@ -267,6 +281,7 @@ float ComputeShadow_PCF_3x3_Gaussian( float3 vPositionWs, float4x4 matWorldToSha
 
 	flSum += VALVE_SAMPLE_SHADOW( g_tShadowBuffer, float3( ClampShadowUv( shadowMapCenter.xy, vShadowMinMaxUv ), objDepth ) ).x * g_vShadow3x3PCFTerms0.z;
 
+
 	return flSum;
 }
 
@@ -335,14 +350,18 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 		}
 		float4 vSpotAtten = saturate( flTemp * g_vSpotLightInnerOuterConeCosines[ i ].z ).xxxx;
 
+
 		nNumLightsUsed++;
 
 		//[branch] if ( g_vLightShadowIndex_vLightParams[ i ].y != 0 ) // If has a light cookie
 		//{
-		//	// Light cookie
-		//	float4 vPositionTextureSpace = mul( float4( vPositionWs.xyz, 1.0 ), g_matWorldToLightCookie[ i ] );
+
+		
+			// Light cookie
+			//float4 vPositionTextureSpace = mul( float4( vPositionWs.xyz, 1.0 ), g_matWorldToLightCookie[ i ] );
 		//	vPositionTextureSpace.xyz /= vPositionTextureSpace.w;
 		//	vSpotAtten.rgb = Tex3DLevel( g_tVrLightCookieTexture, vPositionTextureSpace.xyz, 0.0 ).rgb;
+
 		//}
 
 		float flLightFalloff = DistanceFalloff( flDistToLightSq, g_vLightPosition_flInvRadius[ i ].w, g_vLightFalloffParams[ i ].xy );
@@ -352,6 +371,9 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 		{
 			if ( g_vLightShadowIndex_vLightParams[ i ].x != 0.0 ) // If light casts shadows
 			{
+
+
+
 				#if ( D_VALVE_SHADOWING_POINT_LIGHTS )
 				{
 					if ( g_vLightShadowIndex_vLightParams[ i ].y == 2.0 ) // If light is a point light's fake spotlight

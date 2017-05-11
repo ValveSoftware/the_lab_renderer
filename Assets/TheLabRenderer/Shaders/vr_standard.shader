@@ -58,6 +58,8 @@ Shader "Valve/vr_standard"
 
 		[Enum(UV0,0,UV1,1)] _UVSec ( "UV Set for secondary textures", Float ) = 0
 
+		[Toggle( D_CASTSHADOW )] g_bCastShadows("g_bCastShadows", Int) = 1
+
 		[Toggle( S_RECEIVE_SHADOWS )] g_bReceiveShadows( "g_bReceiveShadows", Int ) = 1
 
 		[Toggle( S_RENDER_BACKFACES )] g_bRenderBackfaces( "g_bRenderBackfaces", Int ) = 0
@@ -118,6 +120,7 @@ Shader "Valve/vr_standard"
 				#pragma shader_feature S_OVERRIDE_LIGHTMAP
 				#pragma shader_feature S_WORLD_ALIGNED_TEXTURE
 				#pragma shader_feature S_RECEIVE_SHADOWS
+				#pragma shader_feature D_CASTSHADOW
 				#pragma shader_feature S_OCCLUSION
 				#pragma shader_feature S_RENDER_BACKFACES
 

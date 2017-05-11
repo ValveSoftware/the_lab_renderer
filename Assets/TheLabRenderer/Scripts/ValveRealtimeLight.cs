@@ -10,7 +10,7 @@ using System.Collections.Generic;
 public class ValveRealtimeLight : MonoBehaviour
 {
 	[NonSerialized] [HideInInspector] public static List< ValveRealtimeLight > s_allLights = new List< ValveRealtimeLight >();
-	[NonSerialized] [HideInInspector] public Light m_cachedLight;
+	[NonSerialized] [HideInInspector] public Light m_cachedLight    ;
 	[NonSerialized] [HideInInspector] public Matrix4x4[] m_shadowTransform = { Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity };
 	[NonSerialized] [HideInInspector] public Matrix4x4[] m_lightCookieTransform = { Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity };
 	[NonSerialized] [HideInInspector] public int[] m_shadowX = { 0, 0, 0, 0, 0, 0 };
@@ -25,6 +25,8 @@ public class ValveRealtimeLight : MonoBehaviour
 
 	//[Header( "Shadow Settings" )]
 	[Range( 128.0f, 1024.0f * 8.0f )] public int m_shadowResolution = 1024;
+
+   
 	public float m_shadowNearClipPlane = 1.0f;
 	public LayerMask m_shadowCastLayerMask = ~0;
 
@@ -33,6 +35,8 @@ public class ValveRealtimeLight : MonoBehaviour
 	public float m_directionalLightShadowRange = 100.0f;
 
 	public bool m_useOcclusionCullingForShadows = true;
+    [Tooltip ("Don't turn off light when out of view. Leave off unless needed.")]
+    public bool IgnoreCameraFrustum = false;
 
 	void OnValidate()
 	{
@@ -101,7 +105,7 @@ public class ValveRealtimeLight : MonoBehaviour
 			//return false;
 		}
 
-		if ( !m_bInCameraFrustum  )
+        if (!m_bInCameraFrustum && !IgnoreCameraFrustum)
 		{
 			//Debug.Log( "Skipping light culled by camera frustum " + l.name );
 			return false;

@@ -11,6 +11,11 @@ Some new features:
 -Anisotropic (G chanel in MetallicTex controls second term)
 -Proper edge falloff Scaler (cubemap scaler is hacky)
 
+
+5/10/2017 changes
+
+- Added and tweaked transparency shadow and shadow toggle (originally  made by Simon Windmill)
+- Fixed adaptive rendering causing render output to be black
 -------
 OG Text
 
