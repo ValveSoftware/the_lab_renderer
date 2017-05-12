@@ -92,6 +92,7 @@ Material:
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
+    - g_bCastShadows: 1
     - g_bReceiveShadows: 1
     - g_bRenderBackfaces: 0
     - g_bUnlit: 0

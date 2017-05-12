@@ -56,6 +56,19 @@ Shader  "Valve/Internal/vr_cast_shadows"
 
 				float4 vPositionPs : SV_POSITION;
 			};
+			
+			
+			float3 g_vLightDirWs = float3( 0.0, 0.0, 0.0 );
+
+			float2 GetShadowOffsets( float3 N, float3 L )
+				{
+					// From: Ignacio Casta隳 http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
+					float cos_alpha = saturate( dot( N, L ) );
+					float offset_scale_N = sqrt( 1 - ( cos_alpha * cos_alpha ) ); // sin( acos( L意 ) )
+					float offset_scale_L = offset_scale_N / cos_alpha; // tan( acos( L意 ) )
+					return float2( offset_scale_N, min( 2.0, offset_scale_L ) );
+				}
+
 
 		 	VertexOutput MainVs(VertexInput i)
 			{
@@ -73,9 +86,16 @@ Shader  "Valve/Internal/vr_cast_shadows"
 
 				}
 				#endif
+			
+					float3 vNormalWs = UnityObjectToWorldNormal( i.vNormalOs.xyz );
+					float3 vPositionWs = mul( unity_ObjectToWorld, i.vPositionOs.xyzw ).xyz;
+					float2 vShadowOffsets = GetShadowOffsets( vNormalWs.xyz, g_vLightDirWs.xyz );
+					//vPositionWs.xyz -= vShadowOffsets.x * vNormalWs.xyz / 100;
+					vPositionWs.xyz += vShadowOffsets.y * g_vLightDirWs.xyz / 1000;
+					o.vPositionPs.xyzw = UnityObjectToClipPos( float4( mul( unity_WorldToObject, float4( vPositionWs.xyz, 1.0 ) ).xyz, 1.0 ) );
 
-				 o.vPositionPs = UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
-				o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
+				// o.vPositionPs = UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
+				//o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
 
 				 return o;
 			}
@@ -134,6 +154,19 @@ Shader  "Valve/Internal/vr_cast_shadows"
 				 float4 vPositionPs : SV_POSITION;
 				float2 uv0 : TEXCOORD0;
 			};
+			
+			
+			float3 g_vLightDirWs = float3( 0.0, 0.0, 0.0 );
+
+			float2 GetShadowOffsets( float3 N, float3 L )
+				{
+					// From: Ignacio Casta隳 http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
+					float cos_alpha = saturate( dot( N, L ) );
+					float offset_scale_N = sqrt( 1 - ( cos_alpha * cos_alpha ) ); // sin( acos( L意 ) )
+					float offset_scale_L = offset_scale_N / cos_alpha; // tan( acos( L意 ) )
+					return float2( offset_scale_N, min( 2.0, offset_scale_L ) );
+				}
+
 
 			sampler2D _MainTex;
 			fixed _Cutoff;
@@ -147,9 +180,16 @@ Shader  "Valve/Internal/vr_cast_shadows"
 				MatrixPaletteSkinning(i.vPositionOs.xyzw, i.vBoneIndices.xyzw);
 			}
 			#endif
+			
+				float3 vNormalWs = UnityObjectToWorldNormal( i.vNormalOs.xyz );
+					float3 vPositionWs = mul( unity_ObjectToWorld, i.vPositionOs.xyzw ).xyz;
+					float2 vShadowOffsets = GetShadowOffsets( vNormalWs.xyz, g_vLightDirWs.xyz );
+					//vPositionWs.xyz -= vShadowOffsets.x * vNormalWs.xyz / 100;
+					vPositionWs.xyz += vShadowOffsets.y * g_vLightDirWs.xyz / 1000;
+					o.vPositionPs.xyzw = UnityObjectToClipPos( float4( mul( unity_WorldToObject, float4( vPositionWs.xyz, 1.0 ) ).xyz, 1.0 ) );
 
-				o.vPositionPs =  UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
-				o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
+				//o.vPositionPs =  UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
+				//o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
 
 				o.uv0 =  i.uv0;
 
@@ -225,6 +265,19 @@ Shader  "Valve/Internal/vr_cast_shadows"
 				float2 uv0 : TEXCOORD0;
 				fixed4  color : COLOR;
 			};
+			
+			
+			float3 g_vLightDirWs = float3( 0.0, 0.0, 0.0 );
+
+			float2 GetShadowOffsets( float3 N, float3 L )
+				{
+					// From: Ignacio Casta隳 http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
+					float cos_alpha = saturate( dot( N, L ) );
+					float offset_scale_N = sqrt( 1 - ( cos_alpha * cos_alpha ) ); // sin( acos( L意 ) )
+					float offset_scale_L = offset_scale_N / cos_alpha; // tan( acos( L意 ) )
+					return float2( offset_scale_N, min( 2.0, offset_scale_L ) );
+				}
+
 
 			sampler2D _MainTex;
 			sampler3D _DitherMaskLOD;
@@ -242,8 +295,15 @@ Shader  "Valve/Internal/vr_cast_shadows"
 				MatrixPaletteSkinning(i.vPositionOs.xyzw, i.vBoneIndices.xyzw);
 			}
 			#endif
-				 o.vPositionPs = UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
-				o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
+				float3 vNormalWs = UnityObjectToWorldNormal( i.vNormalOs.xyz );
+					float3 vPositionWs = mul( unity_ObjectToWorld, i.vPositionOs.xyzw ).xyz;
+					float2 vShadowOffsets = GetShadowOffsets( vNormalWs.xyz, g_vLightDirWs.xyz );
+					//vPositionWs.xyz -= vShadowOffsets.x * vNormalWs.xyz / 100;
+					vPositionWs.xyz += vShadowOffsets.y * g_vLightDirWs.xyz / 1000;
+					o.vPositionPs.xyzw = UnityObjectToClipPos( float4( mul( unity_WorldToObject, float4( vPositionWs.xyz, 1.0 ) ).xyz, 1.0 ) );
+			
+				// o.vPositionPs = UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
+				//o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
 
 				 o.uv0 = i.uv0;
 
