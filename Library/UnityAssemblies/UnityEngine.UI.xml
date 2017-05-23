@@ -3432,7 +3432,7 @@ Used if the native representation has been destroyed.</para>
     </member>
     <member name="T:UnityEngine.UI.Image.FillMethod">
       <summary>
-        <para>Fill method to be used by the UI.Image.</para>
+        <para>Fill method to be used by the Image.</para>
       </summary>
     </member>
     <member name="F:UnityEngine.UI.Image.FillMethod.Horizontal">
@@ -4950,7 +4950,7 @@ Characters 0-9, . (dot), and - (dash / minus sign) are allowed. The dash is only
         <para>UnityEvent callback for when a scrollbar is scrolled.</para>
       </summary>
     </member>
-    <member name="M:UnityEngine.UI.Scrollbar.SetDirection">
+    <member name="M:UnityEngine.UI.Scrollbar.SetDirection(UnityEngine.UI.Scrollbar/Direction,System.Boolean)">
       <summary>
         <para>Set the direction of the scrollbar, optionally setting the layout as well.</para>
       </summary>
@@ -5672,7 +5672,7 @@ Characters 0-9, . (dot), and - (dash / minus sign) are allowed. The dash is only
       <param name="input">The new value for the slider.</param>
       <param name="sendCallback">If the OnValueChanged callback should be invoked.</param>
     </member>
-    <member name="M:UnityEngine.UI.Slider.SetDirection">
+    <member name="M:UnityEngine.UI.Slider.SetDirection(UnityEngine.UI.Slider/Direction,System.Boolean)">
       <summary>
         <para>Sets the direction of this slider, optionally changing the layout as well.</para>
       </summary>
@@ -5681,7 +5681,7 @@ Characters 0-9, . (dot), and - (dash / minus sign) are allowed. The dash is only
     </member>
     <member name="T:UnityEngine.UI.Slider.SliderEvent">
       <summary>
-        <para>Event type used by the UI.Slider.</para>
+        <para>Event type used by the Slider.</para>
       </summary>
     </member>
     <member name="T:UnityEngine.UI.SpriteState">
@@ -5949,7 +5949,7 @@ Characters 0-9, . (dot), and - (dash / minus sign) are allowed. The dash is only
     </member>
     <member name="T:UnityEngine.UI.ToggleGroup">
       <summary>
-        <para>A component that represents a group of UI.Toggles.</para>
+        <para>A component that represents a group of Toggles.</para>
       </summary>
     </member>
     <member name="P:UnityEngine.UI.ToggleGroup.allowSwitchOff">
@@ -5970,12 +5970,13 @@ Characters 0-9, . (dot), and - (dash / minus sign) are allowed. The dash is only
         <para>Are any of the toggles on?</para>
       </summary>
     </member>
-    <member name="M:UnityEngine.UI.ToggleGroup.NotifyToggleOn">
+    <member name="M:UnityEngine.UI.ToggleGroup.NotifyToggleOn(UnityEngine.UI.Toggle)">
       <summary>
         <para>Notify the group that the given toggle is enabled.</para>
       </summary>
+      <param name="toggle"></param>
     </member>
-    <member name="M:UnityEngine.UI.ToggleGroup.RegisterToggle">
+    <member name="M:UnityEngine.UI.ToggleGroup.RegisterToggle(UnityEngine.UI.Toggle)">
       <summary>
         <para>Register a toggle with the group.</para>
       </summary>
@@ -5986,7 +5987,7 @@ Characters 0-9, . (dot), and - (dash / minus sign) are allowed. The dash is only
         <para>Switch all toggles off.</para>
       </summary>
     </member>
-    <member name="M:UnityEngine.UI.ToggleGroup.UnregisterToggle">
+    <member name="M:UnityEngine.UI.ToggleGroup.UnregisterToggle(UnityEngine.UI.Toggle)">
       <summary>
         <para>Toggle to unregister.</para>
       </summary>

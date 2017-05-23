@@ -85,8 +85,11 @@ void RoughnessEllipseToScaleAndExp( float2 vRoughness, out float2 o_vDiffuseExpo
 	
 	
 	o_vDiffuseExponentOut.xy = ( ( 1.0 - vRoughness.xy ) * 0.8 ) + 0.6; // 0.8 and 0.6 are magic numbers
-	o_vSpecularExponentOut.xy = exp2( pow( float2( 1.0, 1.0 ) - vRoughness.xy, float2( 1.5, 1.5 ) ) * float2( 14.0, 14.0 ) ); // Outputs 1-16384
+	//o_vSpecularExponentOut.xy = exp2( pow( float2( 1.0, 1.0 ) - vRoughness.xy, float2( 1.5, 1.5 ) ) * float2( 14.0, 14.0 ) ); // Outputs 1-16384
 	o_vSpecularScaleOut.xy = 1.0 - saturate( vRoughness.xy * 0.5 ); // This is an energy conserving scalar for the roughness exponent.
+
+	o_vSpecularExponentOut = vRoughness.xy * vRoughness.xy ;
+
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -175,10 +178,20 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 
 		#elif ( S_RETROREFLECTIVE )
 		{
-			float flNDotH = saturate( dot(  vPositionToCameraDirWs.xyz , vPositionToLightDirWs.xyz ) );
-			float flNDotHk = pow( flNDotH, dot( vSpecularExponent.xy, float2( 0.5, 0.5 ) ) );
-			flNDotHk *= dot( vSpecularScale.xy, float2( 0.33333, 0.33333 ) ); // The 0.33333 is to match the spec of the aniso algorithm above with isotropic roughness values
-			flSpecularTerm = flNDotHk;
+
+				float flVDotL = saturate( dot(  vPositionToCameraDirWs.xyz , vPositionToLightDirWs.xyz ) );
+				//float flNDotH = saturate(( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) ));
+				float flNDotL = normalize( dot( vNormalWs.xyz, vPositionToLightDirWs.xyz ) );
+				float flNDotV = abs( dot( vNormalWs.xyz, vPositionToCameraDirWs.xyz ) );
+
+			    float visTerm = SmithJointGGXVisibilityTerm( flNDotL, flVDotL, vSpecularExponent.xy);
+                float normTerm = GGXTerm(flVDotL, vSpecularExponent.xy);
+                flSpecularTerm = (visTerm * normTerm * UNITY_PI * .48);
+
+			//float flNDotH = saturate( dot(  vPositionToCameraDirWs.xyz , vPositionToLightDirWs.xyz ) );
+			//float flNDotHk = pow( flNDotH, dot( vSpecularExponent.xy, float2( 0.5, 0.5 ) ) );
+			//flNDotHk *= dot( vSpecularScale.xy, float2( 0.33333, 0.33333 ) ); // The 0.33333 is to match the spec of the aniso algorithm above with isotropic roughness values
+			//flSpecularTerm = flNDotHk;
 
 
 		}
@@ -186,30 +199,40 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 		#else
 		{
 
-		//		float flNDotH = saturate( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) );
-		//		float flNDotL = saturate( dot( vNormalWs.xyz, vPositionToLightDirWs.xyz ) );
-		////		float flNDotV = saturate( dot( vNormalWs.xyz,  ) );
+				//GGX approximation
 
-		//	    float visTerm = SmithJointGGXVisibilityTerm( flNDotL, NdotV, vSpecularExponent.x );
-  //              float normTerm = GGXTerm(flNDotH, roughness);
-  //              float flSpecularTerm = (visTerm*normTerm) * UNITY_PI;
+				float flNDotH = saturate(( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) ));
+				float flNDotL = normalize( dot( vNormalWs.xyz, vPositionToLightDirWs.xyz ) );
+				float flNDotV = abs( dot( vNormalWs.xyz, vPositionToCameraDirWs.xyz ) );
+
+			    float visTerm = SmithJointGGXVisibilityTerm( flNDotL, flNDotV, vSpecularExponent.xy);
+                float normTerm = GGXTerm(flNDotH, vSpecularExponent.xy);
+                flSpecularTerm = (visTerm * normTerm * UNITY_PI * .48);
+
+				//vSpecularTerm.rgb = flSpecularTerm;
+				//vSpecularExponent.xy
 
 
-
-			float flNDotH = saturate( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) );
-			float flNDotHk = pow( flNDotH, dot( vSpecularExponent.xy, float2( 0.5, 0.5 ) ) );
-			flNDotHk *= dot( vSpecularScale.xy, float2( 0.33333, 0.33333 ) ); // The 0.33333 is to match the spec of the aniso algorithm above with isotropic roughness values
-			flSpecularTerm = flNDotHk;
+		//	float flNDotH = saturate( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) );
+		//	float flNDotHk = pow( flNDotH, dot( vSpecularExponent.xy, float2( 0.5, 0.5 ) ) );
+		//	flNDotHk *= dot( vSpecularScale.xy, float2( 0.33333, 0.33333 ) ); // The 0.33333 is to match the spec of the aniso algorithm above with isotropic roughness values
+			//flSpecularTerm = flNDotHk;
 		}
 		#endif
 
-		flSpecularTerm *= flNDotL; // This makes it modified Blinn-Phong
-		flSpecularTerm *= BlinnPhongModifiedNormalizationFactor( vSpecularExponent.x * 0.5 + vSpecularExponent.y * 0.5 );
+	//	flSpecularTerm *= flNDotL; // This makes it modified Blinn-Phong
+	//	flSpecularTerm *= BlinnPhongModifiedNormalizationFactor( vSpecularExponent.x * 0.5 + vSpecularExponent.y * 0.5 );
 
 		float flLDotH = ClampToPositive( dot( vPositionToLightDirWs.xyz, vHalfAngleDirWs.xyz ) );
-		float3 vMaxReflectance = vReflectance.rgb / ( Luminance( vReflectance.rgb ) + 0.0001 );
-		float3 vFresnel = lerp( vReflectance.rgb, vMaxReflectance.rgb, pow( 1.0 - flLDotH, flFresnelExponent ) );
+		//float3 vMaxReflectance = vReflectance.rgb / ( Luminance( vReflectance.rgb ) + 0.0001 );
+		//float3 vFresnel = lerp( vReflectance.rgb, vMaxReflectance.rgb, pow( 1.0 - flLDotH, flFresnelExponent ) );
+
+
+		float3 vFresnel = FresnelTerm( vReflectance , flLDotH);
+
 		vSpecularTerm.rgb = flSpecularTerm * vFresnel.rgb;
+		 
+		
 	}
 
 	return float4( flDiffuseTerm, vSpecularTerm.rgb );

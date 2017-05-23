@@ -74,10 +74,10 @@ Material:
     - _DstBlend: 0
     - _FogMultiplier: 1
     - _GlossMapScale: 1
-    - _Glossiness: 0.604
+    - _Glossiness: 0.878
     - _Glossiness2: 0.5
     - _GlossyReflections: 1
-    - _Metallic: 0.663
+    - _Metallic: 0.31
     - _Mode: 0
     - _OcclusionStrength: 1
     - _OcclusionStrengthDirectDiffuse: 1
@@ -91,6 +91,7 @@ Material:
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
+    - g_bCastShadows: 1
     - g_bReceiveShadows: 1
     - g_bRenderBackfaces: 0
     - g_bUnlit: 0
