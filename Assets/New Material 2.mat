@@ -74,7 +74,7 @@ Material:
     - _DstBlend: 0
     - _FogMultiplier: 1
     - _GlossMapScale: 1
-    - _Glossiness: 0.5
+    - _Glossiness: 0.622
     - _Glossiness2: 0.5
     - _GlossyReflections: 1
     - _Metallic: 0

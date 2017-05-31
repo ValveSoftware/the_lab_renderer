@@ -408,32 +408,6 @@ Shader "Valve/vr_standard"
 
 					#endif
 
-
-					//--------------//
-					// Translucency //
-					//--------------//
-					#if ( _ALPHATEST_ON )
-					{
-						clip( vAlbedoTexel.a - _Cutoff );
-					}
-					#endif
-
-					#if ( _ALPHAPREMULTIPLY_ON )
-					{
-						vAlbedo.rgb *= vAlbedoTexel.a;
-					}
-					#endif
-
-					#if ( _ALPHABLEND_ON || _ALPHAPREMULTIPLY_ON )
-					{
-						o.vColor.a = vAlbedoTexel.a;
-					}
-					#else
-					{
-						o.vColor.a = 1.0;
-					}
-					#endif
-
 					//---------------//
 					// Tangent Space //
 					//---------------//
@@ -485,6 +459,35 @@ Shader "Valve/vr_standard"
 						vNormalWs.xyz = Vec3TsToWsNormalized( vNormalTs.xyz, vGeometricNormalWs.xyz, vTangentUWs.xyz, vTangentVWs.xyz );
 					}
 					#endif
+										
+					//--------------//
+					// Translucency //
+					//--------------//
+					#if ( _ALPHATEST_ON )
+					{
+						clip( vAlbedoTexel.a - _Cutoff );
+					}
+					#endif
+
+					#if ( _ALPHAPREMULTIPLY_ON )
+					{
+						vAlbedo.rgb *= vAlbedoTexel.a;
+					}
+					#endif
+
+					#if ( _ALPHABLEND_ON || _ALPHAPREMULTIPLY_ON )
+					{
+					//	o.vColor.a = vAlbedoTexel.a;
+						float normalBlend = 1 - saturate( dot( ( vNormalWs.xyz   ) , CalculatePositionToCameraDirWs( i.vPositionWs.xyz )));
+						o.vColor.a = lerp(vAlbedoTexel.a , 1 * _Cutoff , normalBlend );
+
+					}
+					#else
+					{
+						o.vColor.a = 1.0;
+					}
+					#endif
+
 
 					//-----------//
 					// Roughness //
@@ -533,6 +536,9 @@ Shader "Valve/vr_standard"
 
 					#elif ( S_ANISOTROPIC_GLOSS  )
 					{
+
+
+
 						float3 vMetallicGloss;// = MetallicGloss( i.vTextureCoords.xy );
 						#ifdef _METALLICGLOSSMAP
 							vMetallicGloss.xyz = tex2D(_MetallicGlossMap, i.vTextureCoords.xy).rag;
@@ -551,8 +557,10 @@ Shader "Valve/vr_standard"
 
 					#elif ( S_RETROREFLECTIVE )
 					{
-					
-											float2 vMetallicGloss;// = MetallicGloss( i.vTextureCoords.xy );
+						float normalBlend = saturate( dot( ( vNormalWs.xyz   ) , CalculatePositionToCameraDirWs( i.vPositionWs.xyz )));
+						normalBlend = pow (normalBlend , 0.25);
+
+						float2 vMetallicGloss;// = MetallicGloss( i.vTextureCoords.xy );
 						#ifdef _METALLICGLOSSMAP
 							vMetallicGloss.xy = tex2D(_MetallicGlossMap, i.vTextureCoords.xy).ra;
 						#else
@@ -565,7 +573,7 @@ Shader "Valve/vr_standard"
 						vAlbedo.rgb = diffColor.rgb;
 
 						vReflectance.rgb = vSpecColor.rgb;
-						flGloss.xy = vMetallicGloss.yy;
+						flGloss.xy = vMetallicGloss.yy ;//* normalBlend;
 					
 					}
 

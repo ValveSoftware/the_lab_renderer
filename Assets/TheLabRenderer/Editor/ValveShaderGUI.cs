@@ -376,7 +376,7 @@ internal class ValveShaderGUI : ShaderGUI
 	void DoAlbedoArea(Material material)
 	{
 		m_MaterialEditor.TexturePropertySingleLine(Styles.albedoText, albedoMap, albedoColor);
-		if (((BlendMode)material.GetFloat("_Mode") == BlendMode.AlphaTest))
+        if (((BlendMode)material.GetFloat("_Mode") == BlendMode.AlphaTest || (BlendMode)material.GetFloat("_Mode") == BlendMode.AlphaBlend || (BlendMode)material.GetFloat("_Mode") == BlendMode.Glass))
 		{
 			m_MaterialEditor.ShaderProperty(alphaCutoff, Styles.alphaCutoffText.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel+1);
 		}

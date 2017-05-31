@@ -8,7 +8,7 @@ Material:
   m_PrefabInternal: {fileID: 0}
   m_Name: cone_retro
   m_Shader: {fileID: 4800000, guid: 908b379d4818cd64184b95a21123d909, type: 3}
-  m_ShaderKeywords: S_RECEIVE_SHADOWS S_RETROREFLECTIVE
+  m_ShaderKeywords: S_RECEIVE_SHADOWS S_RETROREFLECTIVE _NORMALMAP
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_CustomRenderQueue: -1
@@ -19,7 +19,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BumpMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 76fe0e4ce3c96e24d992b86d85cb314d, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
@@ -67,14 +67,14 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _BumpScale: 1
+    - _BumpScale: -1.2
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _FogMultiplier: 1
     - _GlossMapScale: 1
-    - _Glossiness: 0.878
+    - _Glossiness: 0.774
     - _Glossiness2: 0.5
     - _GlossyReflections: 1
     - _Metallic: 0.31

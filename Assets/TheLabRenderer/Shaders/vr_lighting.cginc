@@ -174,6 +174,9 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 			flNDotHkY *= vSpecularScale.y;
 
 			flSpecularTerm = flNDotHkX * flNDotHkY;
+
+			///FIX FOR GGX
+
 		}
 
 		#elif ( S_RETROREFLECTIVE )
@@ -182,18 +185,18 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 				float flVDotL = saturate( dot(  vPositionToCameraDirWs.xyz , vPositionToLightDirWs.xyz ) );
 				//float flNDotH = saturate(( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) ));
 				float flNDotL = normalize( dot( vNormalWs.xyz, vPositionToLightDirWs.xyz ) );
-				float flNDotV = abs( dot( vNormalWs.xyz, vPositionToCameraDirWs.xyz ) );
+				float flNDotV =  dot( vNormalWs.xyz, vPositionToCameraDirWs.xyz ) ;
 
 			    float visTerm = SmithJointGGXVisibilityTerm( flNDotL, flVDotL, vSpecularExponent.xy);
                 float normTerm = GGXTerm(flVDotL, vSpecularExponent.xy);
-                flSpecularTerm = (visTerm * normTerm * UNITY_PI * .48);
+                flSpecularTerm = (visTerm * normTerm * UNITY_PI  * pow (flNDotV, 2));
 
 			//float flNDotH = saturate( dot(  vPositionToCameraDirWs.xyz , vPositionToLightDirWs.xyz ) );
 			//float flNDotHk = pow( flNDotH, dot( vSpecularExponent.xy, float2( 0.5, 0.5 ) ) );
 			//flNDotHk *= dot( vSpecularScale.xy, float2( 0.33333, 0.33333 ) ); // The 0.33333 is to match the spec of the aniso algorithm above with isotropic roughness values
 			//flSpecularTerm = flNDotHk;
 
-
+			//flNDotL = 1;
 		}
 
 		#else
@@ -203,11 +206,11 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 
 				float flNDotH = saturate(( dot( vNormalWs.xyz, vHalfAngleDirWs.xyz ) ));
 				float flNDotL = normalize( dot( vNormalWs.xyz, vPositionToLightDirWs.xyz ) );
-				float flNDotV = abs( dot( vNormalWs.xyz, vPositionToCameraDirWs.xyz ) );
+				float flNDotV = saturate( dot( vNormalWs.xyz, vPositionToCameraDirWs.xyz ) );
 
-			    float visTerm = SmithJointGGXVisibilityTerm( flNDotL, flNDotV, vSpecularExponent.xy);
-                float normTerm = GGXTerm(flNDotH, vSpecularExponent.xy);
-                flSpecularTerm = (visTerm * normTerm * UNITY_PI * .48);
+			    float visTerm = SmithJointGGXVisibilityTerm( flNDotL, flNDotV , vSpecularExponent.xy);
+                float normTerm = GGXTerm(flNDotH, vSpecularExponent.xy );
+                flSpecularTerm = (visTerm * normTerm * UNITY_PI * .8);
 
 				//vSpecularTerm.rgb = flSpecularTerm;
 				//vSpecularExponent.xy
@@ -224,13 +227,12 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 	//	flSpecularTerm *= BlinnPhongModifiedNormalizationFactor( vSpecularExponent.x * 0.5 + vSpecularExponent.y * 0.5 );
 
 		float flLDotH = ClampToPositive( dot( vPositionToLightDirWs.xyz, vHalfAngleDirWs.xyz ) );
-		//float3 vMaxReflectance = vReflectance.rgb / ( Luminance( vReflectance.rgb ) + 0.0001 );
+		float3 vMaxReflectance = vReflectance.rgb / ( Luminance( vReflectance.rgb ) + 0.0001 );
 		//float3 vFresnel = lerp( vReflectance.rgb, vMaxReflectance.rgb, pow( 1.0 - flLDotH, flFresnelExponent ) );
-
 
 		float3 vFresnel = FresnelTerm( vReflectance , flLDotH);
 
-		vSpecularTerm.rgb = flSpecularTerm * vFresnel.rgb;
+		vSpecularTerm.rgb = flSpecularTerm * vFresnel.rgb * pow(flNDotL, .5);
 		 
 		
 	}
