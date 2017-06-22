@@ -6,6 +6,7 @@
 
 #include "UnityCG.cginc"
 #include "UnityStandardBRDF.cginc"
+#include "vr_PCSS.cginc"
 
 #define Tex2DLevel( name, uv, flLevel ) name.SampleLevel( sampler##name, ( uv ).xy, flLevel )
 //#define Tex3DLevel( name, uv, flLevel ) name.SampleLevel( sampler3D##name, ( uv ).xyz, flLevel )
@@ -30,7 +31,7 @@ CBUFFER_START( ValveVrLighting )
 	float4 g_vShadow3x3PCFTerms1;
 	float4 g_vShadow3x3PCFTerms2;
 	float4 g_vShadow3x3PCFTerms3;
-
+	float4 g_vShadowUniTerms;
 
 	float4x4 g_matWorldToLightCookie[ MAX_LIGHTS ];
 CBUFFER_END
@@ -287,6 +288,16 @@ float ComputeShadow_PCF_3x3_Gaussian( float3 vPositionWs, float4x4 matWorldToSha
 	}
 	//*/
 
+	//Simple Bilinear texture filtering
+	if(g_vShadowUniTerms.x == 1){
+		
+	float shadow = VALVE_SAMPLE_SHADOW( g_tShadowBuffer, float3( ClampShadowUv( shadowMapCenter.xy, vShadowMinMaxUv ), objDepth ) ).x;
+	return shadow;
+	}
+
+	//PCF 3x3
+	if (g_vShadowUniTerms.x == 2){
+
 	float4 v20Taps;
 	v20Taps.x = VALVE_SAMPLE_SHADOW( g_tShadowBuffer, float3( ClampShadowUv( shadowMapCenter.xy + g_vShadow3x3PCFTerms1.xy, vShadowMinMaxUv ), objDepth ) ).x; //  1  1
 	v20Taps.y = VALVE_SAMPLE_SHADOW( g_tShadowBuffer, float3( ClampShadowUv( shadowMapCenter.xy + g_vShadow3x3PCFTerms1.zy, vShadowMinMaxUv ), objDepth ) ).x; // -1  1
@@ -305,11 +316,40 @@ float ComputeShadow_PCF_3x3_Gaussian( float3 vPositionWs, float4x4 matWorldToSha
 	flSum += dot( v33Taps.xyzw, g_vShadow3x3PCFTerms0.yyyy );
 
 	flSum += VALVE_SAMPLE_SHADOW( g_tShadowBuffer, float3( ClampShadowUv( shadowMapCenter.xy, vShadowMinMaxUv ), objDepth ) ).x * g_vShadow3x3PCFTerms0.z;
-
-
+	
 	return flSum;
-}
+	}
 
+	//PCSS
+	else{
+
+			
+		float4 coord = vPositionTextureSpace;
+
+		
+		float4 rotation = tex2D(unity_RandomRotation16, coord.xy * _ScreenParams.xy * 0.1) * 2.f - 1.f;// red = cos(theta), green = sin(theta), blue = inverted red, alpha = inverted blue
+		float angle = randAngle(rotation.xyz);//rotated.xyz texture gives stable patterns than shadowCoord.xyz
+		float s = sin(angle);
+		float c = cos(angle);
+		
+		float2 diskRadius = g_vShadow3x3PCFTerms1.xy * g_vShadowUniTerms.y;
+		float result = 0.0;
+		
+		float samples = g_vShadowUniTerms.z;
+
+
+		[loop]for(int i = 0; i < samples; ++i)
+		{
+			// rotate offset
+			float2 rotatedOffset = float2(poissonDisk25[i].x * c + poissonDisk25[i].y * s, poissonDisk25[i].x * -s + poissonDisk25[i].y * c) * diskRadius;
+			result +=  VALVE_SAMPLE_SHADOW( g_tShadowBuffer, float3( ClampShadowUv( shadowMapCenter.xy, vShadowMinMaxUv ) + rotatedOffset, objDepth ) ).x  < objDepth ? 0.0 : 1.0;
+		}
+		half shadow = dot(result, 1 / samples);
+		return shadow;
+
+		}
+
+	}
 //---------------------------------------------------------------------------------------------------------------------------------------------------------
 float3 ComputeOverrideLightmap( float2 vLightmapUV )
 {

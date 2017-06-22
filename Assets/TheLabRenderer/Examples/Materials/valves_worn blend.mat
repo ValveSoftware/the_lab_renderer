@@ -8,7 +8,7 @@ Material:
   m_PrefabInternal: {fileID: 0}
   m_Name: valves_worn blend
   m_Shader: {fileID: 4800000, guid: 908b379d4818cd64184b95a21123d909, type: 3}
-  m_ShaderKeywords: D_CASTSHADOW S_RECEIVE_SHADOWS S_SPECULAR_BLINNPHONG _ALPHAPREMULTIPLY_ON
+  m_ShaderKeywords: D_CASTSHADOW S_RECEIVE_SHADOWS S_SPECULAR_BLINNPHONG _ALPHABLEND_ON
     _NORMALMAP
   m_LightmapFlags: 5
   m_EnableInstancingVariants: 0
@@ -38,7 +38,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _EmissionMap:
         m_Texture: {fileID: 0}
-        m_Scale: {x: 8, y: 7}
+        m_Scale: {x: 4, y: 2}
         m_Offset: {x: 0, y: 0}
     - _FluorescenceMap:
         m_Texture: {fileID: 0}
@@ -46,7 +46,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
-        m_Scale: {x: 8, y: 7}
+        m_Scale: {x: 4, y: 2}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
@@ -69,18 +69,18 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _BumpScale: 1.3
+    - _BumpScale: 1
     - _Cull: 2
-    - _Cutoff: 1
+    - _Cutoff: 0.726
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
     - _FogMultiplier: 1
     - _GlossMapScale: 1
-    - _Glossiness: 0.678
+    - _Glossiness: 0.385
     - _Glossiness2: 0.5
     - _GlossyReflections: 1
     - _Metallic: 0.823
-    - _Mode: 3
+    - _Mode: 2
     - _OcclusionStrength: 1
     - _OcclusionStrengthDirectDiffuse: 0.4
     - _OcclusionStrengthDirectSpecular: 0.5
@@ -90,7 +90,7 @@ Material:
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SpecularMode: 1
-    - _SrcBlend: 1
+    - _SrcBlend: 5
     - _UVSec: 0
     - _ZWrite: 0
     - g_bCastShadows: 1
@@ -105,7 +105,7 @@ Material:
     - g_flReflectanceMin: 0
     - g_flReflectanceScale: 1
     m_Colors:
-    - _Color: {r: 0.14878881, g: 0.37737736, b: 0.47058803, a: 0.275}
+    - _Color: {r: 0, g: 0.3793091, b: 1, a: 0.497}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _FluorescenceColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.41522488, g: 0.58823526, b: 0.45221326, a: 1}

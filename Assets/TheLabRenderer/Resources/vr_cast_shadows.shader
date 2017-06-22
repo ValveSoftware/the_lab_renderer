@@ -94,8 +94,8 @@ Shader  "Valve/Internal/vr_cast_shadows"
 					vPositionWs.xyz += vShadowOffsets.y * g_vLightDirWs.xyz / 1000;
 					o.vPositionPs.xyzw = UnityObjectToClipPos( float4( mul( unity_WorldToObject, float4( vPositionWs.xyz, 1.0 ) ).xyz, 1.0 ) );
 
-				// o.vPositionPs = UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
-				//o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
+				 o.vPositionPs = UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
+				 o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
 
 				 return o;
 			}
@@ -302,8 +302,8 @@ Shader  "Valve/Internal/vr_cast_shadows"
 					vPositionWs.xyz += vShadowOffsets.y * g_vLightDirWs.xyz / 1000;
 					o.vPositionPs.xyzw = UnityObjectToClipPos( float4( mul( unity_WorldToObject, float4( vPositionWs.xyz, 1.0 ) ).xyz, 1.0 ) );
 			
-				// o.vPositionPs = UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
-				//o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
+				 o.vPositionPs = UnityClipSpaceShadowCasterPos(i.vPositionOs.xyz, i.vNormalOs);
+				o.vPositionPs = UnityApplyLinearShadowBias(o.vPositionPs);
 
 				 o.uv0 = i.uv0;
 

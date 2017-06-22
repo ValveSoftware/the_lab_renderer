@@ -36,6 +36,17 @@ public class ValveCamera : MonoBehaviour
 	[Tooltip( "Might cause shadow acne on skinned meshes, but can be more efficient in scenes without skinned meshes" )]
 	public bool m_renderShadowsInLateUpdate = true;
 
+
+    public enum Shadows { Simple, PCF, PCSS }
+    public Shadows ShadowType = Shadows.PCSS;
+
+    [Range(0.0f, 3.0f)]
+    public float PenumbraSize = 1.5f;
+    [Range(0.0f, 1.0f)]
+    public float ShadowBias = 0.017f;
+    [Range(1, 25)]
+    public int ShadowSamples = 20;
+
 	[NonSerialized] private Camera m_shadowCamera = null;
 	[NonSerialized] public RenderTexture m_shadowDepthTexture = null;
 	[NonSerialized] public Shader m_shaderCastShadows = null;
@@ -1478,24 +1489,51 @@ public class ValveCamera : MonoBehaviour
 		}
 		#endif
 
-		// PCF 3x3 Shadows
-		if ( m_shadowDepthTexture )
-		{
-			float flTexelEpsilonX = 1.0f / m_shadowDepthTexture.width;
-			float flTexelEpsilonY = 1.0f / m_shadowDepthTexture.height;
-			Vector4 g_vShadow3x3PCFTerms0 = new Vector4( 20.0f / 267.0f, 33.0f / 267.0f, 55.0f / 267.0f, 0.0f );
-			Vector4 g_vShadow3x3PCFTerms1 = new Vector4( flTexelEpsilonX, flTexelEpsilonY, -flTexelEpsilonX, -flTexelEpsilonY );
-			Vector4 g_vShadow3x3PCFTerms2 = new Vector4( flTexelEpsilonX, flTexelEpsilonY, 0.0f, 0.0f );
-			Vector4 g_vShadow3x3PCFTerms3 = new Vector4( -flTexelEpsilonX, -flTexelEpsilonY, 0.0f, 0.0f );
+        if (m_shadowDepthTexture)
+        {
 
-			Shader.SetGlobalVector( "g_vShadow3x3PCFTerms0", g_vShadow3x3PCFTerms0 );
-			Shader.SetGlobalVector( "g_vShadow3x3PCFTerms1", g_vShadow3x3PCFTerms1 );
-			Shader.SetGlobalVector( "g_vShadow3x3PCFTerms2", g_vShadow3x3PCFTerms2 );
-			Shader.SetGlobalVector( "g_vShadow3x3PCFTerms3", g_vShadow3x3PCFTerms3 );
-		}
+            int ShadowType2int = 0;
+
+            switch (ShadowType)
+            {
+                case Shadows.Simple: { ShadowType2int = 1; }
+                    break;
+                case Shadows.PCF: { ShadowType2int = 2; }
+                    break;
+                case Shadows.PCSS: { ShadowType2int = 3; }
+                    break;
+
+            }
+
+            // Shared PCF & PCSS terms
+            if (ShadowType2int != 0)
+            {
+                float flTexelEpsilonX = 1.0f / m_shadowDepthTexture.width;
+                float flTexelEpsilonY = 1.0f / m_shadowDepthTexture.height;
+                Vector4 g_vShadow3x3PCFTerms1 = new Vector4(flTexelEpsilonX, flTexelEpsilonY, -flTexelEpsilonX, -flTexelEpsilonY);
+                Shader.SetGlobalVector("g_vShadow3x3PCFTerms1", g_vShadow3x3PCFTerms1);
+                Shader.SetGlobalVector("g_vShadowUniTerms", new Vector4(ShadowType2int, PenumbraSize, ShadowSamples, 0)); /// x = Shadow type, y = PenumbraSize , z = shadow samples;
+
+                // PCF 3x3 Shadows
+                if (ShadowType2int == 2)
+                {
+
+                    Vector4 g_vShadow3x3PCFTerms0 = new Vector4(20.0f / 267.0f, 33.0f / 267.0f, 55.0f / 267.0f, 0.0f);
+                    Vector4 g_vShadow3x3PCFTerms2 = new Vector4(flTexelEpsilonX, flTexelEpsilonY, 0.0f, 0.0f);
+                    Vector4 g_vShadow3x3PCFTerms3 = new Vector4(-flTexelEpsilonX, -flTexelEpsilonY, 0.0f, 0.0f);
+
+                    Shader.SetGlobalVector("g_vShadow3x3PCFTerms0", g_vShadow3x3PCFTerms0);
+                    Shader.SetGlobalVector("g_vShadow3x3PCFTerms2", g_vShadow3x3PCFTerms2);
+                    Shader.SetGlobalVector("g_vShadow3x3PCFTerms3", g_vShadow3x3PCFTerms3);
+                }
+
+            }
+        }
 
 		Shader.SetGlobalFloat( "g_flValveGlobalVertexScale", m_hideAllValveMaterials ? 0.0f : 1.0f );
 		Shader.SetGlobalInt( "g_bIndirectLightmaps", m_indirectLightmapsOnly ? 1 : 0 );
+        Shader.SetGlobalVector("unity_LightShadowBias", new Vector4(-ShadowBias, 1, 0, 0)); // spot setup, Lab fakes point light shadows with spots
+
 	}
 
 	//---------------------------------------------------------------------------------------------------------------------------------------------------

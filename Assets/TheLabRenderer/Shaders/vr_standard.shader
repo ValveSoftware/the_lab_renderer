@@ -480,7 +480,7 @@ Shader "Valve/vr_standard"
 						#if ( !S_UNLIT )
 						{
 						float normalBlend = 1 - saturate( dot( vNormalWs.xyz , CalculatePositionToCameraDirWs( i.vPositionWs.xyz ) ));
-						o.vColor.a = lerp(vAlbedoTexel.a , 1 * _Cutoff , normalBlend );
+						o.vColor.a = (vAlbedoTexel.a + lerp(0 , 1 * _Cutoff , normalBlend ));
 						}
 
 						#else
