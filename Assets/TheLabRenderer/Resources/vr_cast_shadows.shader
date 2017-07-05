@@ -170,6 +170,7 @@ Shader  "Valve/Internal/vr_cast_shadows"
 
 			sampler2D _MainTex;
 			fixed _Cutoff;
+			float4 _MainTex_ST;
 		
 			VertexOutput MainVs(VertexInput i)
 			{
@@ -198,7 +199,8 @@ Shader  "Valve/Internal/vr_cast_shadows"
 
 			float4 MainPs(VertexOutput i) : SV_Target
 			{
-				 half alpha = tex2D(_MainTex, i.uv0).a;
+				float2  newUV = TRANSFORM_TEX(i.uv0, _MainTex);
+				 half alpha = tex2D(_MainTex, newUV).a;
 				clip(alpha - _Cutoff);
 
 				return float4(0.0, 0.0, 0.0, 0.0);
@@ -283,6 +285,7 @@ Shader  "Valve/Internal/vr_cast_shadows"
 			sampler3D _DitherMaskLOD;
 			half4 _Color;
 			fixed  _Cutoff;
+			float4 _MainTex_ST;
 
 			VertexOutput MainVs(VertexInput i)
 			{
@@ -320,7 +323,8 @@ Shader  "Valve/Internal/vr_cast_shadows"
 
 			float4 MainPs(VertexOutputClip i) :  SV_Target
 			{
-				half alpha = tex2D(_MainTex, i.uv0).a * _Color.a * i.color.a;
+				float2  newUV = TRANSFORM_TEX(i.uv0, _MainTex);
+				half alpha = tex2D(_MainTex, newUV).a * _Color.a * i.color.a;
 
 
 
