@@ -9,7 +9,6 @@ Material:
   m_Name: GeoSphere
   m_Shader: {fileID: 4800000, guid: 908b379d4818cd64184b95a21123d909, type: 3}
   m_ShaderKeywords: D_CASTSHADOW S_RECEIVE_SHADOWS S_SPECULAR_METALLIC _ALPHAPREMULTIPLY_ON
-    _NORMALMAP
   m_LightmapFlags: 5
   m_EnableInstancingVariants: 0
   m_CustomRenderQueue: 3000

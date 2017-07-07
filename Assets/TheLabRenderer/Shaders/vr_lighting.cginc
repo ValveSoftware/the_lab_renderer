@@ -22,7 +22,7 @@ CBUFFER_START( ValveVrLighting )
 	float4 g_vLightPosition_flInvRadius[ MAX_LIGHTS ];
 	float4 g_vLightDirection[ MAX_LIGHTS ];
 	float4 g_vLightShadowIndex_vLightParams[ MAX_LIGHTS ]; // x = Shadow index, y = Light cookie index, z = Diffuse enabled, w = Specular enabled
-	float4 g_vLightFalloffParams[ MAX_LIGHTS ]; // x = Linear falloff, y = Quadratic falloff, z = Radius squared for culling
+	float4 g_vLightFalloffParams[ MAX_LIGHTS ]; // x = Linear falloff, y = Quadratic falloff, z = Radius squared for culling  , w = lambert wrap
 	float4 g_vSpotLightInnerOuterConeCosines[ MAX_LIGHTS ];
 
 	float4 g_vShadowMinMaxUv[ MAX_LIGHTS ];
@@ -39,6 +39,7 @@ CBUFFER_END
 // Override lightmap
 sampler2D g_tOverrideLightmap;
 //sampler3D g_tVrLightCookieTexture;
+sampler2D g_tVrLightCookieTexture;
 uniform float3 g_vOverrideLightmapScale;
 
 float g_flCubeMapScalar  = 1.0;
@@ -126,9 +127,10 @@ float DistanceFalloff( float flDistToLightSq, float flLightInvRadius, float2 vFa
 //---------------------------------------------------------------------------------------------------------------------------------------------------------
 float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 									   float3 vNormalWs, float3 vEllipseUWs, float3 vEllipseVWs, float3 vPositionToLightDirWs, float3 vPositionToCameraDirWs,
-									   float2 vDiffuseExponent, float2 vSpecularExponent, float2 vSpecularScale, float3 vReflectance, float flFresnelExponent )
+									   float2 vDiffuseExponent, float2 vSpecularExponent, float2 vSpecularScale, float3 vReflectance, float flFresnelExponent ,  float zHardness)
 {
-	float flNDotL = ClampToPositive( dot( vNormalWs.xyz, vPositionToLightDirWs.xyz ) );
+	float flNDotL = ( dot( vNormalWs.xyz, vPositionToLightDirWs.xyz ) );
+
 
 	// Diffuse
 	float flDiffuseTerm = 0.0;
@@ -150,15 +152,25 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 		flDiffuseTerm *= flNDotL;
 		*/
 
+		if (zHardness < 1){
+
+		float flDiffuseExponent = ( vDiffuseExponent.x + vDiffuseExponent.y ) * 0.5;
+		flDiffuseTerm = ClampToPositive(pow( flNDotL * zHardness + 1 - zHardness, flDiffuseExponent ) * ( ( flDiffuseExponent + 1.0 ) * 0.5 ));
+		}
+		else{
 		float flDiffuseExponent = ( vDiffuseExponent.x + vDiffuseExponent.y ) * 0.5;
 		flDiffuseTerm = pow( flNDotL, flDiffuseExponent ) * ( ( flDiffuseExponent + 1.0 ) * 0.5 );
+		}
+
 	}
+
 
 	// Specular
 	float3 vSpecularTerm = float3( 0.0, 0.0, 0.0 );
 	[branch] if ( bSpecular )
 	{
 		float3 vHalfAngleDirWs = normalize( vPositionToLightDirWs.xyz + vPositionToCameraDirWs.xyz );
+		flNDotL = ClampToPositive(flNDotL);
 
 		float flSpecularTerm = 0.0;
 		#if ( S_ANISOTROPIC_GLOSS ) // Adds 34 asm instructions compared to isotropic spec in #else below
@@ -210,7 +222,7 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 				float flNDotV = saturate( dot( vNormalWs.xyz, vPositionToCameraDirWs.xyz ) );
 
 			    float visTerm = SmithJointGGXVisibilityTerm( flNDotL, flNDotV , vSpecularExponent.xy);
-                float normTerm = GGXTerm(flNDotH, vSpecularExponent.xy );
+                float normTerm = GGXTerm(flNDotH, vSpecularExponent.xy / (zHardness * zHardness + 0.0001 ));
                 flSpecularTerm = (visTerm * normTerm * UNITY_PI * .8);
 
 				//vSpecularTerm.rgb = flSpecularTerm;
@@ -237,6 +249,8 @@ float4 ComputeDiffuseAndSpecularTerms( bool bDiffuse, bool bSpecular,
 		 
 		
 	}
+
+
 
 	return float4( flDiffuseTerm, vSpecularTerm.rgb );
 }
@@ -399,10 +413,12 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 			continue;
 		}
 
-		if ( dot( vNormalWs.xyz, vPositionToLightRayWs.xyz ) <= 0.0 )
-		{
-			// Backface cull pixel to this light
-			continue;
+		if ( g_vLightFalloffParams[i].w > .99) { 	// Check if lambert wrap is less than 1
+				if ( dot( vNormalWs.xyz, vPositionToLightRayWs.xyz ) <= 0.0 )
+				{
+				// Backface cull pixel to this light
+				continue;
+				}
 		}
 
 		float3 vPositionToLightDirWs = normalize( vPositionToLightRayWs.xyz );
@@ -418,16 +434,19 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 
 		nNumLightsUsed++;
 
-		//[branch] if ( g_vLightShadowIndex_vLightParams[ i ].y != 0 ) // If has a light cookie
-		//{
+		[branch] if ( g_vLightShadowIndex_vLightParams[ i ].y != 0 ) // If has a light cookie
+		{
 
 		
 			// Light cookie
-			//float4 vPositionTextureSpace = mul( float4( vPositionWs.xyz, 1.0 ), g_matWorldToLightCookie[ i ] );
-		//	vPositionTextureSpace.xyz /= vPositionTextureSpace.w;
+			float4 vPositionTextureSpace = mul( float4( vPositionWs.xyz, 1.0 ), g_matWorldToLightCookie[ i ] );
+			vPositionTextureSpace.xyz /= vPositionTextureSpace.w;
 		//	vSpotAtten.rgb = Tex3DLevel( g_tVrLightCookieTexture, vPositionTextureSpace.xyz, 0.0 ).rgb;
 
-		//}
+			
+				vSpotAtten.rgb = tex2D (g_tVrLightCookieTexture ,  vPositionTextureSpace.xy ) ;
+
+		}
 
 		float flLightFalloff = DistanceFalloff( flDistToLightSq, g_vLightPosition_flInvRadius[ i ].w, g_vLightFalloffParams[ i ].xy );
 
@@ -461,7 +480,7 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 		float4 vLightingTerms = ComputeDiffuseAndSpecularTerms( g_vLightShadowIndex_vLightParams[ i ].z != 0.0, g_vLightShadowIndex_vLightParams[ i ].w != 0.0,
 																vNormalWs.xyz, vEllipseUWs.xyz, vEllipseVWs.xyz,
 																vPositionToLightDirWs.xyz, vPositionToCameraDirWs.xyz,
-																vDiffuseExponent.xy, vSpecularExponent.xy, vSpecularScale.xy, vReflectance.rgb, flFresnelExponent );
+																vDiffuseExponent.xy, vSpecularExponent.xy, vSpecularScale.xy, vReflectance.rgb, flFresnelExponent , g_vLightFalloffParams[ i ].w);
 
 		float4 vLightColor = g_vLightColor[ i ].rgba;
 		float4 vLightMask = vLightColor.rgba * flShadowScalar * flLightFalloff * vSpotAtten.rgba;
@@ -569,7 +588,7 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 				float4 vLightingTerms = ComputeDiffuseAndSpecularTerms( false, true,
 																		vNormalWs.xyz, vEllipseUWs.xyz, vEllipseVWs.xyz,
 																		o_light.dir.xyz, vPositionToCameraDirWs.xyz,
-																		vDiffuseExponent.xy, vSpecularExponent.xy, vSpecularScale.xy, vReflectance.rgb, flFresnelExponent );
+																		vDiffuseExponent.xy, vSpecularExponent.xy, vSpecularScale.xy, vReflectance.rgb, flFresnelExponent , g_vLightFalloffParams[ i ].w);
 
 				float4 vLightColor = float4(_LightColor0.rgb , _LightColor0.a);
 				float4 vLightMask = vLightColor.rgba;
@@ -611,7 +630,7 @@ LightingTerms_t ComputeLighting( float3 vPositionWs, float3 vNormalWs, float3 vT
 			float4 vLightingTerms = ComputeDiffuseAndSpecularTerms( false, true,
 																	vNormalWs.xyz, vEllipseUWs.xyz, vEllipseVWs.xyz,
 																	o_light.dir.xyz, vPositionToCameraDirWs.xyz,
-																	vDiffuseExponent.xy, vSpecularExponent.xy, vSpecularScale.xy, vReflectance.rgb, flFresnelExponent );
+																	vDiffuseExponent.xy, vSpecularExponent.xy, vSpecularScale.xy, vReflectance.rgb, flFresnelExponent , g_vLightFalloffParams[ i ].w);
 
 			float4 vLightColor = float4(_LightColor0.rgb, _LightColor0.a);
 			float4 vLightMask = vLightColor.rgba;

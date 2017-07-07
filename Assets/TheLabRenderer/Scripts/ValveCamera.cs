@@ -35,7 +35,7 @@ public class ValveCamera : MonoBehaviour
 
 	[Tooltip( "Might cause shadow acne on skinned meshes, but can be more efficient in scenes without skinned meshes" )]
 	public bool m_renderShadowsInLateUpdate = true;
-
+    private Texture g_tVrLightCookieTexture = null;
 
     public enum Shadows { Simple, PCF, PCSS }
     public Shadows ShadowType = Shadows.PCSS;
@@ -43,9 +43,9 @@ public class ValveCamera : MonoBehaviour
     [Range(0.0f, 3.0f)]
     public float PenumbraSize = 1.5f;
     [Range(0.0f, 1.0f)]
-    public float ShadowBias = 0.017f;
+    public float ShadowBias = 0.0f;
     [Range(1, 25)]
-    public int ShadowSamples = 20;
+    public int ShadowSamples = 25;
 
 	[NonSerialized] private Camera m_shadowCamera = null;
 	[NonSerialized] public RenderTexture m_shadowDepthTexture = null;
@@ -1233,8 +1233,7 @@ public class ValveCamera : MonoBehaviour
 			matTile.m13 = ( float )vl.m_shadowY[ nNumPointLightShadowFacesAdded ] / ( float )m_shadowDepthTexture.height;
 
 			vl.m_shadowTransform[ nNumPointLightShadowFacesAdded ] = matTile * matScaleBias * m_shadowCamera.projectionMatrix * m_shadowCamera.worldToCameraMatrix;
-			vl.m_lightCookieTransform[ nNumPointLightShadowFacesAdded ] = matScaleBias * m_shadowCamera.projectionMatrix * m_shadowCamera.worldToCameraMatrix;
-
+		
 
             //tie in Unity Light bias
             //if (l.type == LightType.Directional)
@@ -1243,7 +1242,7 @@ public class ValveCamera : MonoBehaviour
             //    Shader.SetGlobalVector("unity_LightShadowBias", new Vector4(-l.shadowBias, 0, 0, 0)); // spot setup, Lab fakes point light shadows with spots
             //end tie in    
 
-            //Shader.SetGlobalTexture("g_tVrLightCookieTexture", vl.m_cachedLight.cookie);
+        
 
 
 
@@ -1316,7 +1315,7 @@ public class ValveCamera : MonoBehaviour
 																			-1.0f );
 				g_vLightDirection[ g_nNumLights ] = new Vector4( l.transform.forward.normalized.x, l.transform.forward.normalized.y, l.transform.forward.normalized.z );
 				g_vLightShadowIndex_vLightParams[ g_nNumLights ] = new Vector4( 0, 0, 1, 1 );
-				g_vLightFalloffParams[ g_nNumLights ] = new Vector4( 0.0f, 0.0f, float.MaxValue );
+				g_vLightFalloffParams[ g_nNumLights ] = new Vector4( 0.0f, 0.0f, float.MaxValue , vl.Hardness);
 				g_vSpotLightInnerOuterConeCosines[ g_nNumLights ] = new Vector4( 0.0f, -1.0f, 1.0f );
 
 				if ( ( l.shadows != LightShadows.None ) && ( vl.m_bRenderShadowsThisFrame ) )
@@ -1340,7 +1339,7 @@ public class ValveCamera : MonoBehaviour
 				g_vLightPosition_flInvRadius[ g_nNumLights ] = new Vector4( l.transform.position.x, l.transform.position.y, l.transform.position.z, 1.0f / l.range );
 				g_vLightDirection[ g_nNumLights ] = new Vector4( 0.0f, 0.0f, 0.0f );
 				g_vLightShadowIndex_vLightParams[ g_nNumLights ] = new Vector4( 0, 0, 1, 1 );
-				g_vLightFalloffParams[ g_nNumLights ] = new Vector4( 1.0f, 0.0f, l.range * l.range );
+                g_vLightFalloffParams[g_nNumLights] = new Vector4(1.0f, 0.0f, l.range * l.range, vl.Hardness);
 				g_vSpotLightInnerOuterConeCosines[ g_nNumLights ] = new Vector4( 0.0f, -1.0f, 1.0f );
 
 				// Point lights require 6 fake spotlights for now
@@ -1415,7 +1414,7 @@ public class ValveCamera : MonoBehaviour
 				g_vLightPosition_flInvRadius[ g_nNumLights ] = new Vector4( l.transform.position.x, l.transform.position.y, l.transform.position.z, 1.0f / l.range );
 				g_vLightDirection[ g_nNumLights ] = new Vector4( l.transform.forward.normalized.x, l.transform.forward.normalized.y, l.transform.forward.normalized.z );
 				g_vLightShadowIndex_vLightParams[ g_nNumLights ] = new Vector4( 0, 0, 1, 1 );
-				g_vLightFalloffParams[ g_nNumLights ] = new Vector4( 1.0f, 0.0f, l.range * l.range );
+                g_vLightFalloffParams[g_nNumLights] = new Vector4(1.0f, 0.0f, l.range * l.range, vl.Hardness);
 
 				float flInnerConePercent = Mathf.Clamp( vl.m_innerSpotPercent, 0.0f, 100.0f ) / 100.0f;
 				float flPhiDot = Mathf.Clamp( Mathf.Cos( l.spotAngle * 0.5f * Mathf.Deg2Rad ), 0.0f, 1.0f ); // outer cone
@@ -1428,6 +1427,30 @@ public class ValveCamera : MonoBehaviour
 					g_matWorldToShadow[ g_nNumLights ] = vl.m_shadowTransform[ nNumPointLightShadowFacesAdded ].transpose;
 					g_vShadowMinMaxUv[ g_nNumLights ] = new Vector4( 0.0f, 0.0f, 1.0f, 1.0f );
 				}
+
+
+
+                if (l.cookie != null)
+                {
+                    g_vLightShadowIndex_vLightParams[g_nNumLights].y = 1; //Enable Coookies
+
+                    Matrix4x4 matScaleBias = Matrix4x4.identity;
+                    matScaleBias.m00 = 0.5f;
+                    matScaleBias.m11 = 0.5f;
+                    matScaleBias.m22 = 0.5f;
+                    matScaleBias.m03 = 0.5f;
+                    matScaleBias.m13 = 0.5f;
+                    matScaleBias.m23 = 0.5f;
+
+                    Matrix4x4 CookieMatrix = Matrix4x4.Perspective(l.spotAngle, 1f, vl.m_shadowNearClipPlane, l.range);
+                    vl.m_lightCookieTransform[nNumPointLightShadowFacesAdded] = matScaleBias * CookieMatrix * l.transform.worldToLocalMatrix;
+                    g_matWorldToLightCookie[g_nNumLights] = vl.m_lightCookieTransform[nNumPointLightShadowFacesAdded].transpose;
+
+                    //Apply cookie texture :: Need to move this to a packer to support multiple textures
+
+                    g_tVrLightCookieTexture = l.cookie;
+
+                }
 
 				g_nNumLights++;
 			}
@@ -1466,6 +1489,7 @@ public class ValveCamera : MonoBehaviour
 		Shader.SetGlobalVectorArray( "g_vShadowMinMaxUv", g_vShadowMinMaxUv );
 		Shader.SetGlobalMatrixArray( "g_matWorldToShadow", g_matWorldToShadow );
 		Shader.SetGlobalMatrixArray( "g_matWorldToLightCookie", g_matWorldToLightCookie );
+        Shader.SetGlobalTexture("g_tVrLightCookieTexture", g_tVrLightCookieTexture);
 
 		if ( bFoundShadowingPointLight )
 		{

@@ -23,8 +23,12 @@ public class ValveRealtimeLight : MonoBehaviour
 	//[Header( "Spotlight Settings" )]
 	[Range( 0.0f, 100.0f )] public float m_innerSpotPercent = 50.0f;
 
+    [Tooltip("Lambert wrap amount. Value of 1 is normal light behavior. Self shadowing objects may have artifacting if used in combination.")]
+    [Range(0, 1)]
+    public float Hardness = 1;
+
 	//[Header( "Shadow Settings" )]
-	[Range( 128.0f, 1024.0f * 8.0f )] public int m_shadowResolution = 1024;
+	[Range( 16.0f, 1024.0f * 8.0f )] public int m_shadowResolution = 1024;
 
    
 	public float m_shadowNearClipPlane = 1.0f;
@@ -40,15 +44,15 @@ public class ValveRealtimeLight : MonoBehaviour
 
 	void OnValidate()
 	{
-		//if ( !Mathf.IsPowerOfTwo( m_shadowResolution ) )
-		//{
-		//	m_shadowResolution = Mathf.ClosestPowerOfTwo( m_shadowResolution );
-		//}
+        //if (!Mathf.IsPowerOfTwo(m_shadowResolution))
+        //{
+        //    m_shadowResolution = Mathf.ClosestPowerOfTwo(m_shadowResolution);
+        //}
 
-		if ( ( m_shadowResolution % 128 ) != 0 )
-		{
-			m_shadowResolution -= m_shadowResolution % 128;
-		}
+        if ((m_shadowResolution % 16) != 0)
+        {
+            m_shadowResolution -= m_shadowResolution % 16;
+        }
 
 		if ( m_shadowNearClipPlane < 0.01f )
 		{
