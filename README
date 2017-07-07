@@ -1,6 +1,27 @@
+
+Modified Lab Renderer --- Updated for Unity 2017.1.0b4
+
+
+Added new methods of light transport to help add to realism.
+
+Some new features:
+
+-Fluorescence (Also including UV light from light Alpha)
+-Retroreflective (Great for reflectors)
+-Anisotropic (G chanel in MetallicTex controls second term)
+-Proper edge falloff Scaler (cubemap scaler is hacky)
+
+
+5/10/2017 changes
+
+- Added and tweaked transparency shadow and shadow toggle (originally  made by Simon Windmill)
+- Fixed adaptive rendering causing render output to be black
+-------
+OG Text
+
 The Lab Renderer
 
-Valve’s VR renderer used in The Lab (Valve’s VR launch title for the HTC Vive). 
+Valveâ€™s VR renderer used in The Lab (Valveâ€™s VR launch title for the HTC Vive). 
 
 This is the set of scripts and shaders that drove rendering in The Lab. It is a forward renderer with support for up to 18 dynamic shadowing lights in a single pass with MSAA enabled, and it included the Adaptive Quality system that dynamically adjusts rendering resolution to maintain framerate in VR. 
 

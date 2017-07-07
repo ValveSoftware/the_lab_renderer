@@ -10,7 +10,7 @@ using System.Collections.Generic;
 public class ValveRealtimeLight : MonoBehaviour
 {
 	[NonSerialized] [HideInInspector] public static List< ValveRealtimeLight > s_allLights = new List< ValveRealtimeLight >();
-	[NonSerialized] [HideInInspector] public Light m_cachedLight;
+	[NonSerialized] [HideInInspector] public Light m_cachedLight    ;
 	[NonSerialized] [HideInInspector] public Matrix4x4[] m_shadowTransform = { Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity };
 	[NonSerialized] [HideInInspector] public Matrix4x4[] m_lightCookieTransform = { Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity, Matrix4x4.identity };
 	[NonSerialized] [HideInInspector] public int[] m_shadowX = { 0, 0, 0, 0, 0, 0 };
@@ -23,8 +23,14 @@ public class ValveRealtimeLight : MonoBehaviour
 	//[Header( "Spotlight Settings" )]
 	[Range( 0.0f, 100.0f )] public float m_innerSpotPercent = 50.0f;
 
+    [Tooltip("Lambert wrap amount. Value of 1 is normal light behavior. Self shadowing objects may have artifacting if used in combination.")]
+    [Range(0, 1)]
+    public float Hardness = 1;
+
 	//[Header( "Shadow Settings" )]
-	[Range( 128.0f, 1024.0f * 8.0f )] public int m_shadowResolution = 1024;
+	[Range( 16.0f, 1024.0f * 8.0f )] public int m_shadowResolution = 1024;
+
+   
 	public float m_shadowNearClipPlane = 1.0f;
 	public LayerMask m_shadowCastLayerMask = ~0;
 
@@ -33,18 +39,20 @@ public class ValveRealtimeLight : MonoBehaviour
 	public float m_directionalLightShadowRange = 100.0f;
 
 	public bool m_useOcclusionCullingForShadows = true;
+    [Tooltip ("Don't turn off light when out of view. Leave off unless needed.")]
+    public bool IgnoreCameraFrustum = false;
 
 	void OnValidate()
 	{
-		//if ( !Mathf.IsPowerOfTwo( m_shadowResolution ) )
-		//{
-		//	m_shadowResolution = Mathf.ClosestPowerOfTwo( m_shadowResolution );
-		//}
+        //if (!Mathf.IsPowerOfTwo(m_shadowResolution))
+        //{
+        //    m_shadowResolution = Mathf.ClosestPowerOfTwo(m_shadowResolution);
+        //}
 
-		if ( ( m_shadowResolution % 128 ) != 0 )
-		{
-			m_shadowResolution -= m_shadowResolution % 128;
-		}
+        if ((m_shadowResolution % 16) != 0)
+        {
+            m_shadowResolution -= m_shadowResolution % 16;
+        }
 
 		if ( m_shadowNearClipPlane < 0.01f )
 		{
@@ -101,7 +109,7 @@ public class ValveRealtimeLight : MonoBehaviour
 			//return false;
 		}
 
-		if ( !m_bInCameraFrustum  )
+        if (!m_bInCameraFrustum && !IgnoreCameraFrustum)
 		{
 			//Debug.Log( "Skipping light culled by camera frustum " + l.name );
 			return false;

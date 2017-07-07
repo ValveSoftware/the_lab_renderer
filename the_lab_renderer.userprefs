@@ -1,0 +1,13 @@
+﻿<Properties StartupItem="Assembly-CSharp.csproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\TheLabRenderer\Editor\ValveShaderGUI.cs">
+    <Files>
+      <File FileName="Assets\TheLabRenderer\Shaders\vr_standard.shader" Line="49" Column="21" />
+      <File FileName="Assets\TheLabRenderer\Editor\ValveShaderGUI.cs" Line="575" Column="87" NotebookId="1" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>

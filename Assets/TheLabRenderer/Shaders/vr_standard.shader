@@ -1,4 +1,6 @@
-﻿// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
 
 Shader "Valve/vr_standard"
 {
@@ -12,6 +14,7 @@ Shader "Valve/vr_standard"
 		_Cutoff( "Alpha Cutoff", Range( 0.0, 1.0 ) ) = 0.5
 
 		_Glossiness("Smoothness", Range(0.0, 1.0)) = 0.5
+		_Glossiness2("Anisotropic Smoothness", Range(0.0, 1.0)) = 0.5
 		_SpecColor("Specular", Color) = (0.2,0.2,0.2)
 		_SpecGlossMap("Specular", 2D) = "white" {}
 
@@ -36,10 +39,14 @@ Shader "Valve/vr_standard"
 		_OcclusionStrengthIndirectDiffuse( "StrengthIndirectDiffuse", Range( 0.0, 1.0 ) ) = 1.0
 		_OcclusionStrengthIndirectSpecular( "StrengthIndirectSpecular", Range( 0.0, 1.0 ) ) = 1.0
 
+		g_flFresnelFalloff ("Fresnel Falloff Scalar" , Range(0.0 , 1.0 ) ) = 1.0
 		g_flCubeMapScalar( "Cube Map Scalar", Range( 0.0, 2.0 ) ) = 1.0
 
 		_EmissionColor( "Color", Color ) = ( 0, 0, 0 )
 		_EmissionMap( "Emission", 2D ) = "white" {}
+
+		_FluorescenceMap( "Fluorescence", 2D ) = "white" {}
+		_FluorescenceColor("Fluorescence Color" , Color ) = (0,0,0)
 		
 		_DetailMask( "Detail Mask", 2D ) = "white" {}
 
@@ -50,6 +57,8 @@ Shader "Valve/vr_standard"
 		g_tOverrideLightmap( "Override Lightmap", 2D ) = "white" {}
 
 		[Enum(UV0,0,UV1,1)] _UVSec ( "UV Set for secondary textures", Float ) = 0
+
+		[Toggle( D_CASTSHADOW )] g_bCastShadows("g_bCastShadows", Int) = 1
 
 		[Toggle( S_RECEIVE_SHADOWS )] g_bReceiveShadows( "g_bReceiveShadows", Int ) = 1
 
@@ -103,12 +112,15 @@ Shader "Valve/vr_standard"
 				#pragma shader_feature _EMISSION
 				#pragma shader_feature _DETAIL_MULX2
 				//#pragma shader_feature _PARALLAXMAP
-
-				#pragma shader_feature S_SPECULAR_NONE S_SPECULAR_BLINNPHONG S_SPECULAR_METALLIC
+				#pragma shader_feature _FLUORESCENCEMAP
+				
+				
+				#pragma shader_feature S_SPECULAR_NONE S_SPECULAR_BLINNPHONG S_SPECULAR_METALLIC S_ANISOTROPIC_GLOSS S_RETROREFLECTIVE
 				#pragma shader_feature S_UNLIT
 				#pragma shader_feature S_OVERRIDE_LIGHTMAP
 				#pragma shader_feature S_WORLD_ALIGNED_TEXTURE
 				#pragma shader_feature S_RECEIVE_SHADOWS
+				#pragma shader_feature D_CASTSHADOW
 				#pragma shader_feature S_OCCLUSION
 				#pragma shader_feature S_RENDER_BACKFACES
 
@@ -150,6 +162,10 @@ Shader "Valve/vr_standard"
 				#include "vr_lighting.cginc"
 				#include "vr_matrix_palette_skinning.cginc"
 				#include "vr_fog.cginc"
+
+				sampler2D	_FluorescenceMap;
+				float4		_FluorescenceColor;
+				float		_Glossiness2;
 
 				// Structs --------------------------------------------------------------------------------------------------------------------------------------------------
 				struct VS_INPUT
@@ -241,7 +257,7 @@ Shader "Valve/vr_standard"
 						o.vPositionWs.xyz = vPositionWs.xyz;
 					}
 					#endif
-					o.vPositionPs.xyzw = mul( UNITY_MATRIX_MVP, i.vPositionOs.xyzw );
+					o.vPositionPs.xyzw = UnityObjectToClipPos( i.vPositionOs.xyzw );
 
 					// Normal
 					float3 vNormalWs = UnityObjectToWorldNormal( i.vNormalOs.xyz );
@@ -323,6 +339,8 @@ Shader "Valve/vr_standard"
 				#define g_tDetailAlbedo _DetailAlbedoMap
 				#define g_tDetailNormal _DetailNormalMap
 				#define g_flDetailNormalScale _DetailNormalMapScale
+				#define g_tFluorescenceMap _FluorescenceMap
+				#define g_vColorFluorescence _FluorescenceColor
 
 				float g_flReflectanceScale = 1.0;
 				float g_flReflectanceBias = 0.0;
@@ -352,7 +370,7 @@ Shader "Valve/vr_standard"
 					//-----------------------------------------------------------//
 					#if ( S_RENDER_BACKFACES )
 					{
-						i.vNormalWs.xyz *= ( bIsFrontFace ? 1.0 : -1.0 );
+					//	i.vNormalWs.xyz *= ( bIsFrontFace ? 1.0 : -1.0 );
 					}
 					#endif
 
@@ -379,29 +397,15 @@ Shader "Valve/vr_standard"
 					}
 					#endif
 
-					//--------------//
-					// Translucency //
-					//--------------//
-					#if ( _ALPHATEST_ON )
-					{
-						clip( vAlbedoTexel.a - _Cutoff );
-					}
-					#endif
 
-					#if ( _ALPHAPREMULTIPLY_ON )
-					{
-						vAlbedo.rgb *= vAlbedoTexel.a;
-					}
-					#endif
 
-					#if ( _ALPHABLEND_ON || _ALPHAPREMULTIPLY_ON )
-					{
-						o.vColor.a = vAlbedoTexel.a;
-					}
-					#else
-					{
-						o.vColor.a = 1.0;
-					}
+					//--------------//
+					// Fluorescence //
+					//--------------//
+					#if ( _FLUORESCENCEMAP)
+					//float3 vFluorescence = max(tex2D( g_tFluorescenceMap, i.vTextureCoords.xy ).rgb, g_vColorFluorescence.rgb);
+					float3 vFluorescence = tex2D( g_tFluorescenceMap, i.vTextureCoords.xy ).rgb * g_vColorFluorescence.rgb;
+
 					#endif
 
 					//---------------//
@@ -455,6 +459,42 @@ Shader "Valve/vr_standard"
 						vNormalWs.xyz = Vec3TsToWsNormalized( vNormalTs.xyz, vGeometricNormalWs.xyz, vTangentUWs.xyz, vTangentVWs.xyz );
 					}
 					#endif
+										
+					//--------------//
+					// Translucency //
+					//--------------//
+					#if ( _ALPHATEST_ON )
+					{
+						clip( vAlbedoTexel.a - _Cutoff );
+					}
+					#endif
+
+					#if ( _ALPHAPREMULTIPLY_ON )
+					{
+						vAlbedo.rgb *= vAlbedoTexel.a;
+					}
+					#endif
+
+					#if ( _ALPHABLEND_ON || _ALPHAPREMULTIPLY_ON )
+					{
+						#if ( !S_UNLIT )
+						{
+						float normalBlend = 1 - saturate( dot( vNormalWs.xyz , CalculatePositionToCameraDirWs( i.vPositionWs.xyz ) ));
+						o.vColor.a = (vAlbedoTexel.a + lerp(0 , 1 * _Cutoff , normalBlend ));
+						}
+
+						#else
+						{
+						o.vColor.a = vAlbedoTexel.a;
+						}
+						#endif
+					}
+					#else
+					{
+						o.vColor.a = 1.0;
+					}
+					#endif
+
 
 					//-----------//
 					// Roughness //
@@ -469,7 +509,7 @@ Shader "Valve/vr_standard"
 
 					// Reflectance and gloss
 					float3 vReflectance = float3( 0.0, 0.0, 0.0 );
-					float flGloss = 0.0;
+					float2 flGloss = 0.0;
 					#if ( S_SPECULAR_METALLIC )
 					{
 						float2 vMetallicGloss;// = MetallicGloss( i.vTextureCoords.xy );
@@ -485,7 +525,7 @@ Shader "Valve/vr_standard"
 						vAlbedo.rgb = diffColor.rgb;
 
 						vReflectance.rgb = vSpecColor.rgb;
-						flGloss = vMetallicGloss.y;
+						flGloss.xy = vMetallicGloss.yy;
 					}
 					#elif ( S_SPECULAR_BLINNPHONG )
 					{
@@ -498,11 +538,56 @@ Shader "Valve/vr_standard"
 
 						vReflectanceGloss.rgb = ( vReflectanceGloss.rgb * g_flReflectanceScale.xxx ) + g_flReflectanceBias.xxx;
 						vReflectance.rgb = vReflectanceGloss.rgb;
-						flGloss = vReflectanceGloss.a;
+						flGloss.xy = vReflectanceGloss.aa;
 					}
+
+					#elif ( S_ANISOTROPIC_GLOSS  )
+					{
+
+
+
+						float3 vMetallicGloss;// = MetallicGloss( i.vTextureCoords.xy );
+						#ifdef _METALLICGLOSSMAP
+							vMetallicGloss.xyz = tex2D(_MetallicGlossMap, i.vTextureCoords.xy).rag;
+						#else
+							vMetallicGloss.xyz = half3(_Metallic, _Glossiness, _Glossiness2);
+						#endif
+
+						float flOneMinusReflectivity;
+						float3 vSpecColor;
+						float3 diffColor = DiffuseAndSpecularFromMetallic( vAlbedo.rgb, vMetallicGloss.x, /*out*/ vSpecColor, /*out*/ flOneMinusReflectivity);
+						vAlbedo.rgb = diffColor.rgb;
+
+						vReflectance.rgb = vSpecColor.rgb;
+						flGloss.xy = vMetallicGloss.yz;
+					}
+
+					#elif ( S_RETROREFLECTIVE )
+					{
+						float normalBlend = saturate( dot( ( vNormalWs.xyz   ) , CalculatePositionToCameraDirWs( i.vPositionWs.xyz )));
+						normalBlend = pow (normalBlend , 0.25);
+
+						float2 vMetallicGloss;// = MetallicGloss( i.vTextureCoords.xy );
+						#ifdef _METALLICGLOSSMAP
+							vMetallicGloss.xy = tex2D(_MetallicGlossMap, i.vTextureCoords.xy).ra;
+						#else
+							vMetallicGloss.xy = half2(_Metallic, _Glossiness);
+						#endif
+
+						float flOneMinusReflectivity;
+						float3 vSpecColor;
+						float3 diffColor = DiffuseAndSpecularFromMetallic( vAlbedo.rgb, vMetallicGloss.x, /*out*/ vSpecColor, /*out*/ flOneMinusReflectivity);
+						vAlbedo.rgb = diffColor.rgb;
+
+						vReflectance.rgb = vSpecColor.rgb;
+						flGloss.xy = vMetallicGloss.yy ;//* normalBlend;
+					
+					}
+
+					
 					#endif
 
-					vRoughness.xy = ( 1.0 - flGloss ).xx;
+					vRoughness.xy = ( 1.0 - flGloss.xy );
 					#if ( !S_SPECULAR_NONE )
 					{
 						vRoughness.xy = AdjustRoughnessByGeometricNormal( vRoughness.xy, vGeometricNormalWs.xyz );
@@ -513,7 +598,7 @@ Shader "Valve/vr_standard"
 					// Lighting //
 					//----------//
 					LightingTerms_t lightingTerms;
-					lightingTerms.vDiffuse.rgb = float3( 1.0, 1.0, 1.0 );
+					lightingTerms.vDiffuse.rgba = float4( 1.0, 1.0, 1.0 , 1.0);
 					lightingTerms.vSpecular.rgb = float3( 0.0, 0.0, 0.0 );
 					lightingTerms.vIndirectDiffuse.rgb = float3( 0.0, 0.0, 0.0 );
 					lightingTerms.vIndirectSpecular.rgb = float3( 0.0, 0.0, 0.0 );
@@ -542,7 +627,7 @@ Shader "Valve/vr_standard"
 						#if ( S_OCCLUSION )
 						{
 							float flOcclusion = tex2D( _OcclusionMap, i.vTextureCoords.xy ).g;
-							lightingTerms.vDiffuse.rgb *= LerpOneTo( flOcclusion, _OcclusionStrength * _OcclusionStrengthDirectDiffuse );
+							lightingTerms.vDiffuse.rgba *= LerpOneTo( flOcclusion, _OcclusionStrength * _OcclusionStrengthDirectDiffuse );
 							lightingTerms.vSpecular.rgb *= LerpOneTo( flOcclusion, _OcclusionStrength * _OcclusionStrengthDirectSpecular );
 							lightingTerms.vIndirectDiffuse.rgb *= LerpOneTo( flOcclusion, _OcclusionStrength * _OcclusionStrengthIndirectDiffuse );
 							lightingTerms.vIndirectSpecular.rgb *= LerpOneTo( flOcclusion, _OcclusionStrength * _OcclusionStrengthIndirectSpecular );
@@ -554,6 +639,21 @@ Shader "Valve/vr_standard"
 					// Diffuse
 					o.vColor.rgb = ( lightingTerms.vDiffuse.rgb + lightingTerms.vIndirectDiffuse.rgb ) * vAlbedo.rgb;
 
+
+					// Fluorescence
+					#if ( _FLUORESCENCEMAP )
+			
+
+					float3 LitFluorescence =  float3(
+										/*RED*/		max(max(lightingTerms.vDiffuse.r + lightingTerms.vIndirectDiffuse.r , max( lightingTerms.vDiffuse.g + lightingTerms.vIndirectDiffuse.g, lightingTerms.vDiffuse.b + lightingTerms.vIndirectDiffuse.b)), lightingTerms.vDiffuse.a),
+										/*GREEN*/	max((max(lightingTerms.vDiffuse.g + lightingTerms.vIndirectDiffuse.g, lightingTerms.vDiffuse.b + lightingTerms.vIndirectDiffuse.b)) , lightingTerms.vDiffuse.a),
+										/*BLUE*/	max(lightingTerms.vDiffuse.b + lightingTerms.vIndirectDiffuse.b , lightingTerms.vDiffuse.a)
+													) 
+													* vFluorescence.rgb ;
+					o.vColor.rgb = max(o.vColor.rgb, LitFluorescence.rgb);
+					#endif
+					//)
+
 					// Specular
 					#if ( !S_SPECULAR_NONE )
 					{
@@ -561,8 +661,10 @@ Shader "Valve/vr_standard"
 					}
 					#endif
 					o.vColor.rgb += lightingTerms.vIndirectSpecular.rgb; // Indirect specular applies its own fresnel in the forward lighting header file
-
+						
 					// Emission - Unity just adds the emissive term at the end instead of adding it to the diffuse lighting term. Artists may want both options.
+					
+
 					float3 vEmission = Emission( i.vTextureCoords.xy );
 					o.vColor.rgb += vEmission.rgb;
 

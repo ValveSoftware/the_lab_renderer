@@ -1,4 +1,6 @@
-﻿// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
 
 Shader "Valve/Internal/vr_quality_vis"
 {
@@ -42,7 +44,7 @@ Shader "Valve/Internal/vr_quality_vis"
 				PS_INPUT MainVs( VS_INPUT i )
 				{
 					PS_INPUT o;
-					o.vPositionPs.xyzw = mul( UNITY_MATRIX_MVP, i.vPositionOs.xyzw );
+					o.vPositionPs.xyzw = UnityObjectToClipPos( i.vPositionOs.xyzw );
 					o.vTexCoord.xy = float2( i.vTexCoord.x, 1.0 - i.vTexCoord.y );
 					return o;
 				}

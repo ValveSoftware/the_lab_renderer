@@ -1,4 +1,6 @@
-﻿// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Copyright (c) Valve Corporation, All rights reserved. ======================================================================================================
 
 Shader "Valve/vr_skybox"
 {
@@ -76,7 +78,7 @@ Shader "Valve/vr_skybox"
 			PS_INPUT SkyboxVs( VS_INPUT v )
 			{
 				PS_INPUT o;
-				o.vPositionPs.xyzw = mul( UNITY_MATRIX_MVP, RotateAroundYInDegrees( v.vPositionOs.xyzw, g_flRotation ) );
+				o.vPositionPs.xyzw = UnityObjectToClipPos( RotateAroundYInDegrees( v.vPositionOs.xyzw, g_flRotation ) );
 				o.vTexcoord.xy = v.vTexcoord.xy;
 				return o;
 			}
