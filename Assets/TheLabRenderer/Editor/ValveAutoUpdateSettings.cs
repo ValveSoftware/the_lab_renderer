@@ -5,7 +5,10 @@
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEditor;
+using UnityEditor.Rendering;
+using System;
 using System.IO;
 
 [InitializeOnLoad]
@@ -78,6 +81,28 @@ public class TheLabRenderer_Settings : EditorWindow
 		}
 	}
 
+	static RenderingPath renderingPathPlayerSetting{
+		get{
+			#if UNITY_5_4
+				return PlayerSettings.renderingPath;
+			#else
+				TierSettings tierSettings = EditorGraphicsSettings.GetTierSettings(EditorUserBuildSettings.selectedBuildTargetGroup, Graphics.activeTier);
+				return tierSettings.renderingPath;
+			#endif
+		}
+		set{
+			#if UNITY_5_4
+				PlayerSettings.renderingPath = value;
+			#else
+				foreach(GraphicsTier tier in (GraphicsTier[])Enum.GetValues(typeof(GraphicsTier))){
+					TierSettings tierSettings = EditorGraphicsSettings.GetTierSettings(EditorUserBuildSettings.selectedBuildTargetGroup, tier);
+					tierSettings.renderingPath = value;
+					EditorGraphicsSettings.SetTierSettings(EditorUserBuildSettings.selectedBuildTargetGroup, tier, tierSettings);
+				}
+			#endif
+		}
+	}
+
 	static void Update()
 	{
 		bool show =
@@ -101,7 +126,7 @@ public class TheLabRenderer_Settings : EditorWindow
 			(!EditorPrefs.HasKey(ignore + visibleInBackground) &&
 				PlayerSettings.visibleInBackground != recommended_VisibleInBackground) ||
 			(!EditorPrefs.HasKey(ignore + renderingPath) &&
-				PlayerSettings.renderingPath != recommended_RenderPath) ||
+				renderingPathPlayerSetting != recommended_RenderPath) ||
 			(!EditorPrefs.HasKey(ignore + colorSpace) &&
 				PlayerSettings.colorSpace != recommended_ColorSpace) ||
 			(!EditorPrefs.HasKey(ignore + gpuSkinning) &&
@@ -425,17 +450,17 @@ public class TheLabRenderer_Settings : EditorWindow
 		}
 
 		if (!EditorPrefs.HasKey(ignore + renderingPath) &&
-			PlayerSettings.renderingPath != recommended_RenderPath)
+			renderingPathPlayerSetting != recommended_RenderPath)
 		{
 			++numItems;
 
-			GUILayout.Label(renderingPath + string.Format(currentValue, PlayerSettings.renderingPath));
+			GUILayout.Label(renderingPath + string.Format(currentValue, renderingPathPlayerSetting));
 
 			GUILayout.BeginHorizontal();
 
 			if (GUILayout.Button(string.Format(useRecommended, recommended_RenderPath) + " - required for MSAA"))
 			{
-				PlayerSettings.renderingPath = recommended_RenderPath;
+				renderingPathPlayerSetting = recommended_RenderPath;
 			}
 
 			GUILayout.FlexibleSpace();
@@ -630,7 +655,7 @@ public class TheLabRenderer_Settings : EditorWindow
 				if (!EditorPrefs.HasKey(ignore + visibleInBackground))
 					PlayerSettings.visibleInBackground = recommended_VisibleInBackground;
 				if (!EditorPrefs.HasKey(ignore + renderingPath))
-					PlayerSettings.renderingPath = recommended_RenderPath;
+					renderingPathPlayerSetting = recommended_RenderPath;
 				if (!EditorPrefs.HasKey(ignore + colorSpace))
 					PlayerSettings.colorSpace = recommended_ColorSpace;
 				if (!EditorPrefs.HasKey(ignore + gpuSkinning))
@@ -673,7 +698,7 @@ public class TheLabRenderer_Settings : EditorWindow
 						EditorPrefs.SetBool(ignore + fullscreenMode, true);
 					if (PlayerSettings.visibleInBackground != recommended_VisibleInBackground)
 						EditorPrefs.SetBool(ignore + visibleInBackground, true);
-					if (PlayerSettings.renderingPath != recommended_RenderPath)
+					if (renderingPathPlayerSetting != recommended_RenderPath)
 						EditorPrefs.SetBool(ignore + renderingPath, true);
 					if (PlayerSettings.colorSpace != recommended_ColorSpace)
 						EditorPrefs.SetBool(ignore + colorSpace, true);
