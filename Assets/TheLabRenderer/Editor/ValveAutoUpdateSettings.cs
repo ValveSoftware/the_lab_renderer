@@ -61,13 +61,30 @@ public class TheLabRenderer_Settings : EditorWindow
 		EditorApplication.update += Update;
 	}
 
+	static bool showUnitySplashScreenPlayerSetting{
+		get{
+			#if UNITY_5_4
+				return PlayerSettings.showUnitySplashScreen;
+			#else
+				return PlayerSettings.SplashScreen.show;
+			#endif
+		}
+		set{
+			#if UNITY_5_4
+				PlayerSettings.showUnitySplashScreen = value;
+			#else
+				PlayerSettings.SplashScreen.show = value;
+			#endif
+		}
+	}
+
 	static void Update()
 	{
 		bool show =
 			(!EditorPrefs.HasKey(ignore + buildTarget) &&
 				EditorUserBuildSettings.activeBuildTarget != recommended_BuildTarget) ||
 			(!EditorPrefs.HasKey(ignore + showUnitySplashScreen) &&
-				PlayerSettings.showUnitySplashScreen != recommended_ShowUnitySplashScreen) ||
+				showUnitySplashScreenPlayerSetting != recommended_ShowUnitySplashScreen) ||
 			(!EditorPrefs.HasKey(ignore + defaultIsFullScreen) &&
 				PlayerSettings.defaultIsFullScreen != recommended_DefaultIsFullScreen) ||
 			(!EditorPrefs.HasKey(ignore + defaultScreenSize) &&
@@ -214,17 +231,17 @@ public class TheLabRenderer_Settings : EditorWindow
 		}
 
 		if (!EditorPrefs.HasKey(ignore + showUnitySplashScreen) &&
-			PlayerSettings.showUnitySplashScreen != recommended_ShowUnitySplashScreen)
+			showUnitySplashScreenPlayerSetting != recommended_ShowUnitySplashScreen)
 		{
 			++numItems;
 
-			GUILayout.Label(showUnitySplashScreen + string.Format(currentValue, PlayerSettings.showUnitySplashScreen));
+			GUILayout.Label(showUnitySplashScreen + string.Format(currentValue, showUnitySplashScreenPlayerSetting));
 
 			GUILayout.BeginHorizontal();
 
 			if (GUILayout.Button(string.Format(useRecommended, recommended_ShowUnitySplashScreen)))
 			{
-				PlayerSettings.showUnitySplashScreen = recommended_ShowUnitySplashScreen;
+				showUnitySplashScreenPlayerSetting = recommended_ShowUnitySplashScreen;
 			}
 
 			GUILayout.FlexibleSpace();
@@ -594,7 +611,7 @@ public class TheLabRenderer_Settings : EditorWindow
 				if (!EditorPrefs.HasKey(ignore + buildTarget))
 					EditorUserBuildSettings.SwitchActiveBuildTarget(recommended_BuildTarget);
 				if (!EditorPrefs.HasKey(ignore + showUnitySplashScreen))
-					PlayerSettings.showUnitySplashScreen = recommended_ShowUnitySplashScreen;
+					showUnitySplashScreenPlayerSetting = recommended_ShowUnitySplashScreen;
 				if (!EditorPrefs.HasKey(ignore + defaultIsFullScreen))
 					PlayerSettings.defaultIsFullScreen = recommended_DefaultIsFullScreen;
 				if (!EditorPrefs.HasKey(ignore + defaultScreenSize))
@@ -639,7 +656,7 @@ public class TheLabRenderer_Settings : EditorWindow
 					// Only ignore those that do not currently match our recommended settings.
 					if (EditorUserBuildSettings.activeBuildTarget != recommended_BuildTarget)
 						EditorPrefs.SetBool(ignore + buildTarget, true);
-					if (PlayerSettings.showUnitySplashScreen != recommended_ShowUnitySplashScreen)
+					if (showUnitySplashScreenPlayerSetting != recommended_ShowUnitySplashScreen)
 						EditorPrefs.SetBool(ignore + showUnitySplashScreen, true);
 					if (PlayerSettings.defaultIsFullScreen != recommended_DefaultIsFullScreen)
 						EditorPrefs.SetBool(ignore + defaultIsFullScreen, true);
