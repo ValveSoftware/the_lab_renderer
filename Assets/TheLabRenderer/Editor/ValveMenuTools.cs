@@ -182,7 +182,7 @@ public class ValveMenuTools
 					m.renderQueue = 3000;
 				}
 			}
-			
+
 			return true;
 		}
 		else if ( bRecordUnknownShaders )
@@ -399,7 +399,6 @@ public class ValveMenuTools
 	}
 
 	//---------------------------------------------------------------------------------------------------------------------------------------------------
-	[UnityEditor.MenuItem( "Valve/Shader Dev/Convert All Materials Back to Unity Shaders", false, 101 )]
 	private static void ValveToStandard( bool bConvertAllMaterials )
 	{
 		int nNumMaterialsConverted = 0;
