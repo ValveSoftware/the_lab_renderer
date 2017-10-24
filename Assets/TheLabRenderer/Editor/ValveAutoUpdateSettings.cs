@@ -250,7 +250,11 @@ public class TheLabRenderer_Settings : EditorWindow
 
 			if (GUILayout.Button(string.Format(useRecommended, recommended_BuildTarget)))
 			{
+				#if UNITY_5_4 || UNITY_5_5
 				EditorUserBuildSettings.SwitchActiveBuildTarget(recommended_BuildTarget);
+				#else
+				EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(recommended_BuildTarget), recommended_BuildTarget);
+				#endif
 			}
 
 			GUILayout.FlexibleSpace();
@@ -642,7 +646,11 @@ public class TheLabRenderer_Settings : EditorWindow
 			{
 				// Only set those that have not been explicitly ignored.
 				if (!EditorPrefs.HasKey(ignore + buildTarget))
+					#if UNITY_5_4 || UNITY_5_5
 					EditorUserBuildSettings.SwitchActiveBuildTarget(recommended_BuildTarget);
+					#else
+					EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(recommended_BuildTarget), recommended_BuildTarget);
+					#endif
 				if (!EditorPrefs.HasKey(ignore + showUnitySplashScreen))
 					showUnitySplashScreenPlayerSetting = recommended_ShowUnitySplashScreen;
 				if (!EditorPrefs.HasKey(ignore + defaultIsFullScreen))
