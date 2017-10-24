@@ -391,7 +391,7 @@ public class ValveCamera : MonoBehaviour
 			var timing = new Valve.VRRenderingPackage.Compositor_FrameTiming();
 			timing.m_nSize = ( uint )System.Runtime.InteropServices.Marshal.SizeOf( typeof( Valve.VRRenderingPackage.Compositor_FrameTiming ) );
 			Valve.VRRenderingPackage.OpenVR.Compositor.GetFrameTiming( ref timing, 0 );
-		
+
 			if ( timing.m_nNumFramePresents > 1 )
 				return;
 		}
@@ -449,7 +449,9 @@ public class ValveCamera : MonoBehaviour
 		//{
 		//	ValveShadowBufferRender();
 		//}
-
+		#if UNITY_5_5 || UNITY_5_6_OR_NEWER
+			UpdateAdaptiveQuality();
+		#endif
 		// Adaptive quality debug quad
 		if ( Application.isPlaying )
 		{
@@ -496,7 +498,6 @@ public class ValveCamera : MonoBehaviour
 				{
 					0, 1, 2, 0, 2, 3
 				};
-				mesh.Optimize();
 				mesh.UploadMeshData( false );
 
 				m_adaptiveQualityDebugQuad = new GameObject( "AdaptiveQualityDebugQuad" );
@@ -522,7 +523,9 @@ public class ValveCamera : MonoBehaviour
 	//---------------------------------------------------------------------------------------------------------------------------------------------------
 	void OnPreCull()
 	{
-		UpdateAdaptiveQuality();
+		#if UNITY_5_4
+			UpdateAdaptiveQuality();
+		#endif
 		//if ( !m_renderShadowsInLateUpdate )
 		{
 			ValveShadowBufferRender();
@@ -627,6 +630,20 @@ public class ValveCamera : MonoBehaviour
 		}
 	}
 
+	static public float gpuTimeLastFrame{
+		get{
+			float last = 0f;
+			#if UNITY_5_4 || UNITY_5_5
+				last = VRStats.gpuTimeLastFrame;
+			#elif UNITY_5_6 || UNITY_2017_1
+				VRStats.TryGetGPUTimeLastFrame(out last);
+			#else
+				XRStats.TryGetGPUTimeLastFrame(out last);
+			#endif
+			return last;
+		}
+	}
+
 	[NonSerialized] private int m_nLastQualityFrameCount = -1;
 	void UpdateAdaptiveQuality()
 	{
@@ -653,7 +670,7 @@ public class ValveCamera : MonoBehaviour
 		// Add latest timing to ring buffer
 		int nRingBufferSize = m_adaptiveQualityRingBuffer.GetLength( 0 );
 		m_nAdaptiveQualityRingBufferPos = ( m_nAdaptiveQualityRingBufferPos + 1 ) % nRingBufferSize;
-		m_adaptiveQualityRingBuffer[ m_nAdaptiveQualityRingBufferPos ] = VRStats.gpuTimeLastFrame;
+		m_adaptiveQualityRingBuffer[ m_nAdaptiveQualityRingBufferPos ] = gpuTimeLastFrame;
 
 		int nOldQualityLevel = m_nAdaptiveQualityLevel;
 		float flSingleFrameMs = ( VRDevice.refreshRate > 0.0f ) ? ( 1000.0f / VRDevice.refreshRate ) : ( 1000.0f / 90.0f ); // Assume 90 fps
@@ -819,7 +836,7 @@ public class ValveCamera : MonoBehaviour
 		Shader.SetGlobalInt( "g_nNumBins", m_adaptiveQualityNumLevels );
 		Shader.SetGlobalInt( "g_nDefaultBin", m_adaptiveQualityDefaultLevel );
 		Shader.SetGlobalInt( "g_nCurrentBin", nAdaptiveQualityLevel );
-		Shader.SetGlobalInt( "g_nLastFrameInBudget", m_bInterleavedReprojectionEnabled || ( VRStats.gpuTimeLastFrame > flSingleFrameMs ) ? 0 : 1 );
+		Shader.SetGlobalInt( "g_nLastFrameInBudget", m_bInterleavedReprojectionEnabled || ( gpuTimeLastFrame > flSingleFrameMs ) ? 0 : 1 );
 	}
 
 	//---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1051,7 +1068,7 @@ public class ValveCamera : MonoBehaviour
 					Vector3 vLightRight = lightTransform.right;
 					Vector3 vLightUp = lightTransform.up;
 					float flSpotAngle = l.spotAngle;
-					
+
 					// Passed the AABB test
 					vl.m_bInCameraFrustum = true;
 
@@ -1380,7 +1397,7 @@ public class ValveCamera : MonoBehaviour
 				nNumLightsIncludingTooMany++;
 				if ( nNumLightsIncludingTooMany > MAX_LIGHTS )
 					continue;
-				
+
 				float flIntensity = ( l.intensity <= 1.0f ) ? l.intensity : l.intensity * l.intensity;
 				g_vLightColor[ g_nNumLights ] = new Vector4( l.color.linear.r * flIntensity, l.color.linear.g * flIntensity, l.color.linear.b * flIntensity );
 				g_vLightPosition_flInvRadius[ g_nNumLights ] = new Vector4( l.transform.position.x, l.transform.position.y, l.transform.position.z, 1.0f / l.range );
