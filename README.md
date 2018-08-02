@@ -1,6 +1,6 @@
-The Lab Renderer
+# The Lab Renderer
 
-Valve’s VR renderer used in The Lab (Valve’s VR launch title for the HTC Vive). 
+Valveâ€™s VR renderer used in The Lab (Valveâ€™s VR launch title for the HTC Vive). 
 
 This is the set of scripts and shaders that drove rendering in The Lab. It is a forward renderer with support for up to 18 dynamic shadowing lights in a single pass with MSAA enabled, and it included the Adaptive Quality system that dynamically adjusts rendering resolution to maintain framerate in VR. 
 
